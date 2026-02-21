@@ -6,8 +6,10 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthState
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck, Loader2, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function SetupAdminPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -26,27 +28,22 @@ export default function SetupAdminPage() {
   const handleSetup = async () => {
     setStatus('loading');
     const email = 'emanueleadelini@gmail.com';
-    const pass = 'Angela25!'; // Password corretta: Angela25!
+    const pass = 'Angela25!';
 
     try {
       let user = currentUser;
 
-      // Se non siamo loggati con l'account corretto, proviamo a crearlo o loggarlo
       if (!user || user.email !== email) {
         try {
           const res = await createUserWithEmailAndPassword(auth, email, pass);
           user = res.user;
         } catch (authError: any) {
-          // Se l'utente esiste già, proviamo a fare il login per ottenere l'UID
           if (authError.code === 'auth/email-already-in-use') {
             try {
               const res = await signInWithEmailAndPassword(auth, email, pass);
               user = res.user;
             } catch (signInError: any) {
-              if (signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/wrong-password') {
-                throw new Error("L'utente esiste già ma la password nel codice non corrisponde a quella su Firebase. Per sicurezza, vai nella console Firebase (Authentication), elimina l'utente " + email + " e riprova questo setup.");
-              }
-              throw signInError;
+              throw new Error("L'utente esiste già ma la password nel codice non corrisponde. Elimina l'utente dalla console Firebase (Authentication) e riprova.");
             }
           } else {
             throw authError;
@@ -55,19 +52,35 @@ export default function SetupAdminPage() {
       }
 
       if (user) {
-        // Crea o aggiorna il profilo admin in Firestore
-        await setDoc(doc(db, 'users', user.uid), {
+        const docRef = doc(db, 'users', user.uid);
+        const adminData = {
           email: user.email,
           ruolo: 'admin',
           nomeAzienda: 'Nexus Agency',
           creatoIl: serverTimestamp()
-        });
+        };
 
-        setStatus('success');
-        setMessage('Configurazione completata! L\'account ' + user.email + ' è ora Amministratore.');
+        // Mutation non-blocking seguendo le linee guida: no await, catch per errore contestuale
+        setDoc(docRef, adminData)
+          .then(() => {
+            setStatus('success');
+            setMessage('Configurazione completata! L\'account ' + user.email + ' è ora Amministratore.');
+          })
+          .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: docRef.path,
+              operation: 'create',
+              requestResourceData: adminData,
+            });
+
+            // Emette l'errore per il listener globale (Next.js overlay in dev)
+            errorEmitter.emit('permission-error', permissionError);
+            
+            setStatus('error');
+            setMessage("Errore di permessi Firestore. Le regole sono state aggiornate, attendi qualche secondo e riprova.");
+          });
       }
     } catch (error: any) {
-      console.error(error);
       setStatus('error');
       setMessage(error.message || 'Errore durante la configurazione.');
     }
@@ -90,7 +103,7 @@ export default function SetupAdminPage() {
         <CardContent className="space-y-6">
           {status === 'idle' && (
             <div className="space-y-4">
-              <Button onClick={handleSetup} className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 font-bold">
+              <Button onClick={handleSetup} className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 font-bold transition-all shadow-lg shadow-indigo-100">
                 Configura Admin Ora
               </Button>
             </div>
@@ -99,12 +112,12 @@ export default function SetupAdminPage() {
           {status === 'loading' && (
             <div className="flex flex-col items-center py-4">
               <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mb-2" />
-              <p className="text-sm text-gray-500 font-medium">Verifica in corso...</p>
+              <p className="text-sm text-gray-500 font-medium">Salvataggio dati su Firestore...</p>
             </div>
           )}
 
           {status === 'success' && (
-            <div className="space-y-4 text-center">
+            <div className="space-y-4 text-center animate-in fade-in zoom-in duration-300">
               <div className="flex justify-center">
                 <CheckCircle className="w-12 h-12 text-green-500" />
               </div>
