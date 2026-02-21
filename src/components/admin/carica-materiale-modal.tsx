@@ -154,7 +154,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
                   <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                   <Input id="link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://we.tl/..." className="pl-10" />
                 </div>
-                <p className="text-[10px] text-muted-foreground">Usa questa opzione per video > 100MB o cartelle Drive/Dropbox.</p>
+                <p className="text-[10px] text-muted-foreground">Usa questa opzione per video &gt; 100MB o cartelle Drive/Dropbox.</p>
               </div>
             </TabsContent>
           </Tabs>

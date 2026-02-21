@@ -243,7 +243,7 @@ export default function ClienteDashboard() {
                   <div className="space-y-2">
                     <Label>Link WeTransfer/Drive</Label>
                     <Input value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://..." />
-                    <p className="text-[10px] text-muted-foreground">Obbligatorio per video > 100MB.</p>
+                    <p className="text-[10px] text-muted-foreground">Obbligatorio per video &gt; 100MB.</p>
                   </div>
                 </TabsContent>
               </Tabs>
