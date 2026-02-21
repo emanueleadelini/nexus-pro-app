@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
@@ -11,13 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Upload, ArrowUpRight, Check, Loader2, UploadCloud, X, FileIcon, CalendarDays, Clock, Filter, PieChart, Info, Send, MessageSquare, Share2, Image as ImageIcon } from 'lucide-react';
+import { Upload, ArrowUpRight, Check, Loader2, UploadCloud, X, FileIcon, CalendarDays, Clock, Filter, PieChart, Info, Send, MessageSquare, Share2, Image as ImageIcon, Link as LinkIcon, ExternalLink, Plus } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -26,7 +27,9 @@ export default function ClienteDashboard() {
   const db = useFirestore();
   const { toast } = useToast();
   const [clienteId, setClienteId] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [externalLink, setExternalLink] = useState('');
+  const [uploadType, setUploadType] = useState<'file' | 'link'>('file');
   const [destinazione, setDestinazione] = useState<DestinazioneAsset>('social');
   const [isUploading, setIsUploading] = useState(false);
   const [isRequestingUpgrade, setIsRequestingUpgrade] = useState(false);
@@ -71,62 +74,86 @@ export default function ClienteDashboard() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files));
     }
   };
 
-  const handleUpload = () => {
-    if (!clienteId || !selectedFile || !user) return;
-    setIsUploading(true);
-    
-    const matColRef = collection(db, 'clienti', clienteId, 'materiali');
-    const matData = {
-      nome_file: selectedFile.name,
-      url_storage: null,
-      caricato_da: user.uid,
-      destinazione: destinazione,
-      stato_validazione: 'in_attesa',
-      note_rifiuto: null,
-      creato_il: serverTimestamp()
-    };
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
-    addDoc(matColRef, matData)
-      .then(() => {
-        resetUploadForm();
-        toast({ title: "Materiale inviato!", description: "Il team Nexus lo validerà a breve." });
-      })
-      .catch(e => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: matColRef.path, operation: 'create', requestResourceData: matData }));
-      })
-      .finally(() => {
-        setIsUploading(false);
-      });
+  const handleUpload = async () => {
+    if (!clienteId || !user) return;
+    
+    if (uploadType === 'file' && selectedFiles.length === 0) {
+      toast({ variant: 'destructive', title: 'Errore', description: 'Seleziona almeno un file.' });
+      return;
+    }
+    if (uploadType === 'link' && !externalLink) {
+      toast({ variant: 'destructive', title: 'Errore', description: 'Inserisci un link.' });
+      return;
+    }
+
+    setIsUploading(true);
+    const matColRef = collection(db, 'clienti', clienteId, 'materiali');
+    
+    try {
+      if (uploadType === 'file') {
+        const promises = selectedFiles.map(file => 
+          addDoc(matColRef, {
+            nome_file: file.name,
+            url_storage: null,
+            caricato_da: user.uid,
+            ruolo_caricatore: 'cliente',
+            destinazione: destinazione,
+            stato_validazione: 'in_attesa',
+            note_rifiuto: null,
+            creato_il: serverTimestamp()
+          })
+        );
+        await Promise.all(promises);
+      } else {
+        await addDoc(matColRef, {
+          nome_file: 'Link Esterno Inviato dal Cliente',
+          url_storage: null,
+          link_esterno: externalLink,
+          caricato_da: user.uid,
+          ruolo_caricatore: 'cliente',
+          destinazione: destinazione,
+          stato_validazione: 'in_attesa',
+          note_rifiuto: null,
+          creato_il: serverTimestamp()
+        });
+      }
+      
+      resetUploadForm();
+      toast({ title: "Materiale inviato!", description: "Il team Nexus lo validerà a breve." });
+    } catch (e: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: matColRef.path, operation: 'create' }));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleUpgradeRequest = () => {
     if (!clienteId) return;
     setIsRequestingUpgrade(true);
-    
     const clientRef = doc(db, 'clienti', clienteId);
     updateDoc(clientRef, { 
       richiesta_upgrade: true,
       aggiornato_il: serverTimestamp()
     })
-    .then(() => {
-      toast({ title: "Richiesta inviata!", description: "L'agenzia è stata notificata." });
-    })
-    .catch(e => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: clientRef.path, operation: 'update' }));
-    })
-    .finally(() => {
-      setIsRequestingUpgrade(false);
-    });
+    .then(() => toast({ title: "Richiesta inviata!", description: "L'agenzia è stata notificata." }))
+    .catch(e => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: clientRef.path, operation: 'update' })))
+    .finally(() => setIsRequestingUpgrade(false));
   };
 
   const resetUploadForm = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setExternalLink('');
     setDestinazione('social');
+    setUploadType('file');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -147,21 +174,26 @@ export default function ClienteDashboard() {
   const daysWithPosts = posts?.filter((p: any) => p.data_pubblicazione && typeof p.data_pubblicazione.toDate === 'function').map((p: any) => p.data_pubblicazione.toDate().toDateString()) || [];
 
   const filteredMaterials = materials?.filter(mat => {
-    const typeInfo = getFileTypeInfo(mat.nome_file);
+    const typeInfo = getFileTypeInfo(mat.nome_file, !!mat.link_esterno);
     const matchesTipo = tipoFilter === 'all' || typeInfo.type === tipoFilter;
     const matchesDest = destFilter === 'all' || mat.destinazione === destFilter;
     return matchesTipo && matchesDest;
   }) || [];
 
-  const groupedMaterials = filteredMaterials.reduce((acc: any, mat: Material) => {
-    let date = 'Data non disponibile';
-    if (mat.creato_il && typeof mat.creato_il.toDate === 'function') {
-      date = mat.creato_il.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(mat);
-    return acc;
-  }, {});
+  const agencyMaterials = filteredMaterials.filter(m => m.ruolo_caricatore === 'admin');
+  const clientMaterials = filteredMaterials.filter(m => m.ruolo_caricatore === 'cliente');
+
+  const getGrouped = (mats: Material[]) => {
+    return mats.reduce((acc: any, mat: Material) => {
+      let date = 'Data non disponibile';
+      if (mat.creato_il && typeof mat.creato_il.toDate === 'function') {
+        date = mat.creato_il.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(mat);
+      return acc;
+    }, {});
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -176,54 +208,59 @@ export default function ClienteDashboard() {
               <Upload className="w-4 h-4" /> Invia nuovo Asset
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Invia materiale all'agenzia</DialogTitle>
-              <DialogDescription>La data di invio verrà registrata automaticamente dal sistema.</DialogDescription>
+              <DialogDescription>Invia file multipli o link per video pesanti.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label>File da caricare</Label>
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${selectedFile ? 'border-indigo-400 bg-indigo-50/50' : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}`}
-                >
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                  {selectedFile ? (
-                    <div className="flex flex-col items-center text-center">
-                      <div className="bg-indigo-600 p-2 rounded-lg mb-2"><FileIcon className="w-6 h-6 text-white" /></div>
-                      <span className="text-sm font-semibold text-gray-900 truncate max-w-[250px]">{selectedFile.name}</span>
-                      <Button type="button" variant="ghost" size="sm" className="mt-2 text-red-500 hover:text-red-600 h-7" onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}>
-                        <X className="w-3 h-3 mr-1" /> Rimuovi
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <UploadCloud className="w-10 h-10 text-gray-300" />
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-gray-600">Seleziona un file per l'invio</p>
+              <Tabs value={uploadType} onValueChange={(v: any) => setUploadType(v)}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file">File Locale</TabsTrigger>
+                  <TabsTrigger value="link">Link Esterno</TabsTrigger>
+                </TabsList>
+                <TabsContent value="file" className="pt-4 space-y-4">
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${selectedFiles.length > 0 ? 'border-indigo-400 bg-indigo-50/50' : 'border-gray-200 hover:border-indigo-300'}`}
+                  >
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
+                    {selectedFiles.length > 0 ? (
+                      <div className="w-full space-y-2">
+                        {selectedFiles.map((f, i) => (
+                          <div key={i} className="flex items-center justify-between bg-white p-2 rounded border text-xs">
+                            <span className="truncate flex-1 mr-2">{f.name}</span>
+                            <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={(e) => { e.stopPropagation(); removeFile(i); }}><X className="w-3 h-3" /></Button>
+                          </div>
+                        ))}
                       </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
+                    ) : (
+                      <><UploadCloud className="w-8 h-8 text-gray-300" /><p className="text-xs font-medium text-gray-500">Trascina i tuoi file qui</p></>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="link" className="pt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label>Link WeTransfer/Drive</Label>
+                    <Input value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://..." />
+                    <p className="text-[10px] text-muted-foreground">Obbligatorio per video > 100MB.</p>
+                  </div>
+                </TabsContent>
+              </Tabs>
               <div className="space-y-2">
-                <Label>Destinazione d'uso prevista</Label>
-                <Select value={destinazione} onValueChange={(val: DestinazioneAsset) => setDestinazione(val)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona destinazione" />
-                  </SelectTrigger>
+                <Label>Destinazione</Label>
+                <Select value={destinazione} onValueChange={(val: any) => setDestinazione(val)}>
+                  <SelectTrigger><SelectValue placeholder="Seleziona" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="social">📱 Social Media</SelectItem>
-                    <SelectItem value="sito">🌐 Sito Web</SelectItem>
-                    <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
+                    <SelectItem value="social">📱 Social</SelectItem>
+                    <SelectItem value="sito">🌐 Sito</SelectItem>
+                    <SelectItem value="offline">🖨️ Offline</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleUpload} disabled={!selectedFile || isUploading} className="w-full bg-indigo-600 h-11">
+              <Button onClick={handleUpload} disabled={isUploading} className="w-full bg-indigo-600">
                 {isUploading ? <Loader2 className="animate-spin" /> : 'Invia Materiale'}
               </Button>
             </DialogFooter>
@@ -235,265 +272,160 @@ export default function ClienteDashboard() {
         <div className="space-y-6">
           <Card className="rounded-xl border-gray-200/50 shadow-md overflow-hidden">
             <CardHeader className="bg-indigo-600 text-white pb-6">
-              <CardTitle className="text-xl font-headline flex items-center gap-2">
-                <PieChart className="w-5 h-5" /> Stato Account
-              </CardTitle>
-              <CardDescription className="text-indigo-100 text-xs">
-                Contatore crediti Piano Editoriale
-              </CardDescription>
+              <CardTitle className="text-xl font-headline flex items-center gap-2"><PieChart className="w-5 h-5" /> Stato Account</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="flex flex-col items-center justify-center py-4 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Post Rimanenti nel Mese</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Post Rimanenti</span>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-5xl font-bold font-headline ${postRimanenti <= 1 ? 'text-red-600' : 'text-gray-900'}`}>
-                    {postRimanenti}
-                  </span>
+                  <span className={`text-5xl font-bold font-headline ${postRimanenti <= 1 ? 'text-red-600' : 'text-gray-900'}`}>{postRimanenti}</span>
                   <span className="text-gray-400 font-medium">/ {postTotali}</span>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-tighter">
-                  <span className="text-gray-400">Utilizzo Calendario</span>
-                  <span className={usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}>
-                    {postUsati} / {postTotali}
-                  </span>
+                  <span className="text-gray-400">Utilizzo</span>
+                  <span className={usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}>{postUsati} / {postTotali}</span>
                 </div>
-                <Progress 
-                  value={usagePercent} 
-                  className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} 
-                />
+                <Progress value={usagePercent} className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} />
               </div>
-
-              <div className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 flex gap-3 items-start">
-                <Info className="w-4 h-4 text-indigo-500 mt-0.5" />
-                <p className="text-[10px] text-indigo-700 leading-relaxed">
-                  I crediti sono calcolati in tempo reale in base ai post inseriti nel calendario editoriale.
-                </p>
-              </div>
-
               {client.richiesta_upgrade ? (
-                <div className="bg-indigo-50 text-indigo-700 text-[10px] font-bold p-3 rounded-lg flex items-center justify-center gap-2 border border-indigo-100 italic">
-                  <Send className="w-3 h-3" /> Richiesta inviata all'agenzia
-                </div>
+                <div className="bg-indigo-50 text-indigo-700 text-[10px] font-bold p-3 rounded-lg flex items-center justify-center gap-2 border border-indigo-100 italic">Richiesta inviata</div>
               ) : (
-                <Button 
-                  variant="link" 
-                  onClick={handleUpgradeRequest}
-                  disabled={isRequestingUpgrade}
-                  className="w-full text-indigo-600 p-0 flex items-center justify-center gap-1 font-bold"
-                >
-                  {isRequestingUpgrade ? <Loader2 className="animate-spin w-4 h-4" /> : <>Richiedi Post Extra <ArrowUpRight className="w-4 h-4" /></>}
+                <Button variant="link" onClick={handleUpgradeRequest} disabled={isRequestingUpgrade} className="w-full text-indigo-600 p-0 font-bold">
+                  {isRequestingUpgrade ? <Loader2 className="animate-spin" /> : <>Richiedi Post Extra <ArrowUpRight className="w-4 h-4" /></>}
                 </Button>
               )}
             </CardContent>
           </Card>
-
           <Card className="p-4 border-gray-200/50 shadow-sm hidden lg:block">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Calendario PED</h3>
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              className="rounded-md border-none"
-              modifiers={{
-                hasPost: (date) => daysWithPosts.includes(date.toDateString())
-              }}
-              modifiersClassNames={{
-                hasPost: "bg-indigo-100 text-indigo-900 font-bold border-b-2 border-indigo-600 rounded-none"
-              }}
+              className="rounded-md"
+              modifiers={{ hasPost: (date) => daysWithPosts.includes(date.toDateString()) }}
+              modifiersClassNames={{ hasPost: "bg-indigo-100 text-indigo-900 font-bold border-b-2 border-indigo-600 rounded-none" }}
             />
           </Card>
         </div>
 
         <div className="lg:col-span-2 space-y-12">
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-headline font-bold flex items-center gap-2">
-                Piano Editoriale (PED)
-                {selectedDate && <span className="text-sm font-normal text-gray-400"> - {selectedDate.toLocaleDateString('it-IT')}</span>}
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)} className="text-indigo-600">Vedi tutti</Button>
-            </div>
-
-            <div className="lg:hidden mb-4">
-              <Card className="p-4 border-gray-200/50">
-                 <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="rounded-md mx-auto"
-                />
-              </Card>
-            </div>
-
+            <h2 className="text-xl font-headline font-bold">Piano Editoriale (PED)</h2>
             {isPostsLoading ? <Skeleton className="h-48" /> : postsOnSelectedDate.length > 0 ? (
               <div className="space-y-6">
                 {postsOnSelectedDate.map((post: any) => {
                   const materialAssociato = materials?.find(m => m.id === post.materiale_id);
-                  const typeInfo = materialAssociato ? getFileTypeInfo(materialAssociato.nome_file) : null;
-
+                  const typeInfo = materialAssociato ? getFileTypeInfo(materialAssociato.nome_file, !!materialAssociato.link_esterno) : null;
                   return (
-                    <Card key={post.id} className="rounded-xl border-gray-200/60 overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
-                      {/* Social Header */}
+                    <Card key={post.id} className="rounded-xl border-gray-200/60 overflow-hidden shadow-sm bg-white">
                       <div className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10 border border-gray-100">
-                            <AvatarFallback className="bg-indigo-600 text-white font-bold">
-                              {client.nome_azienda.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                          <Avatar className="h-10 w-10"><AvatarFallback className="bg-indigo-600 text-white font-bold">{client.nome_azienda.charAt(0)}</AvatarFallback></Avatar>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-sm text-gray-900">{client.nome_azienda}</h3>
-                              <Badge className={`${STATO_POST_COLORS[post.stato as StatoPost].bg} ${STATO_POST_COLORS[post.stato as StatoPost].text} border-none font-medium text-[9px] py-0 px-1.5`}>
-                                {STATO_POST_LABELS[post.stato as StatoPost]}
-                              </Badge>
+                              <h3 className="font-bold text-sm">{client.nome_azienda}</h3>
+                              <Badge className={`${STATO_POST_COLORS[post.stato as StatoPost].bg} ${STATO_POST_COLORS[post.stato as StatoPost].text} border-none text-[9px]`}>{STATO_POST_LABELS[post.stato as StatoPost]}</Badge>
                             </div>
-                            <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              Pianificato: {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
-                            </p>
+                            <p className="text-[10px] text-gray-400 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Pianificato: {post.data_pubblicazione?.toDate().toLocaleString('it-IT')}</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-300">
-                           <MoreHorizontal className="w-5 h-5" />
-                        </Button>
                       </div>
-
-                      {/* Social Copy */}
-                      <div className="px-4 pb-3">
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {post.testo}
-                        </p>
-                      </div>
-
-                      {/* Social Media Area */}
-                      {materialAssociato ? (
-                        <div className="relative aspect-video bg-gray-100 border-y border-gray-50 flex flex-col items-center justify-center overflow-hidden">
-                           {typeInfo?.type === 'foto' || typeInfo?.type === 'grafica' ? (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-300">
-                                <ImageIcon className="w-12 h-12 mb-2" />
-                                <span className="text-[10px] font-medium px-4 text-center truncate w-full">{materialAssociato.nome_file}</span>
-                              </div>
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400">
-                                <typeInfo?.icon className="w-12 h-12 mb-2" />
-                                <span className="text-[10px] font-medium px-4 text-center truncate w-full">{materialAssociato.nome_file}</span>
-                              </div>
-                            )}
-                            <div className="absolute top-3 left-3">
-                               <Badge variant="secondary" className="bg-white/90 backdrop-blur shadow-sm text-[9px] uppercase font-bold">
-                                 {typeInfo?.label}
-                               </Badge>
+                      <div className="px-4 pb-3 text-sm text-gray-700 whitespace-pre-wrap">{post.testo}</div>
+                      {materialAssociato && (
+                        <div className="relative aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+                          {materialAssociato.link_esterno ? (
+                            <div className="flex flex-col items-center bg-blue-50 w-full h-full justify-center">
+                              <LinkIcon className="w-10 h-10 text-blue-400 mb-2" />
+                              <a href={materialAssociato.link_esterno} target="_blank" className="text-xs bg-blue-600 text-white px-4 py-1 rounded">Scarica Asset</a>
                             </div>
-                        </div>
-                      ) : (
-                        <div className="h-px bg-gray-100" />
-                      )}
-
-                      {/* Social Actions */}
-                      <div className="p-2 px-4 flex items-center justify-between border-t border-gray-50">
-                          <div className="flex gap-4 text-gray-400">
-                             <div className="flex items-center gap-1 text-[10px] font-bold uppercase"><MessageSquare className="w-3.5 h-3.5" /> Commenti</div>
-                             <div className="flex items-center gap-1 text-[10px] font-bold uppercase"><Share2 className="w-3.5 h-3.5" /> Condividi</div>
-                          </div>
-                          {post.stato === 'da_approvare' && (
-                            <Button className="h-8 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 uppercase tracking-tighter gap-2" onClick={() => approvePost(post.id)}>
-                              <Check className="w-4 h-4" /> Approva Post
-                            </Button>
+                          ) : (
+                            <div className="bg-gray-50 w-full h-full flex flex-col items-center justify-center">
+                              {typeInfo?.icon && <typeInfo.icon className="w-12 h-12 text-gray-300" />}
+                              <span className="text-[10px] px-4 truncate">{materialAssociato.nome_file}</span>
+                            </div>
                           )}
+                        </div>
+                      )}
+                      <div className="p-2 px-4 flex items-center justify-end border-t">
+                        {post.stato === 'da_approvare' && (
+                          <Button className="h-8 text-[10px] font-bold bg-emerald-600 gap-2" onClick={() => approvePost(post.id)}><Check className="w-4 h-4" /> Approva</Button>
+                        )}
                       </div>
                     </Card>
                   );
                 })}
               </div>
-            ) : (
-              <div className="text-center py-10 bg-gray-50/50 rounded-xl border-2 border-dashed">
-                <p className="text-muted-foreground text-sm">Nessun post programmato per questa data.</p>
-              </div>
-            )}
+            ) : <div className="text-center py-10 bg-gray-50 rounded-xl">Nessun post per questa data.</div>}
           </div>
 
           <div className="space-y-6">
-            <h2 className="text-xl font-headline font-bold flex items-center gap-2">Archivio Asset</h2>
-            <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-bold text-gray-500 uppercase tracking-tight">Filtra per:</span>
-              </div>
-              
+            <h2 className="text-xl font-headline font-bold">Archivio Asset</h2>
+            <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border mb-6">
               <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder="Tipologia" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[140px] text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tutti i tipi</SelectItem>
-                  <SelectItem value="grafica">🎨 Grafiche</SelectItem>
+                  <SelectItem value="all">Tutti Tipi</SelectItem>
                   <SelectItem value="foto">📸 Foto</SelectItem>
                   <SelectItem value="video">🎥 Video</SelectItem>
-                  <SelectItem value="documento">📄 Documenti</SelectItem>
+                  <SelectItem value="grafica">🎨 Grafiche</SelectItem>
+                  <SelectItem value="link">🔗 Link</SelectItem>
                 </SelectContent>
               </Select>
-
               <Select value={destFilter} onValueChange={setDestFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder="Destinazione" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[140px] text-xs"><SelectValue placeholder="Dest." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tutte le destinazioni</SelectItem>
-                  <SelectItem value="social">📱 Social Media</SelectItem>
-                  <SelectItem value="sito">🌐 Sito Web</SelectItem>
-                  <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
+                  <SelectItem value="all">Tutte Dest.</SelectItem>
+                  <SelectItem value="social">📱 Social</SelectItem>
+                  <SelectItem value="sito">🌐 Sito</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {isMaterialsLoading ? <Skeleton className="h-64" /> : Object.keys(groupedMaterials).length > 0 ? (
-              Object.keys(groupedMaterials).map(date => (
-                <div key={date} className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border">{date}</h3>
-                    <div className="h-px bg-gray-100 flex-1" />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {groupedMaterials[date].map((mat: Material) => {
-                      const typeInfo = getFileTypeInfo(mat.nome_file);
-                      const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
-                      const timeStr = mat.creato_il && typeof mat.creato_il.toDate === 'function' ? mat.creato_il.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
-                      
-                      return (
-                        <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm hover:border-indigo-200 transition-colors">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className={`p-2 ${typeInfo.bg} rounded-lg`}><typeInfo.icon className={`w-5 h-5 ${typeInfo.color}`} /></div>
-                              <div className="flex flex-col items-end gap-1">
-                                <Badge variant="outline" className="text-[8px] font-bold uppercase py-0 px-2 flex gap-1 items-center bg-gray-50">
-                                  <DestIcon className="w-2 h-2" /> {DESTINAZIONE_LABELS[mat.destinazione]}
-                                </Badge>
-                                <Badge className={`${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].bg} ${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].text} border-none text-[9px] py-0`}>
-                                  {STATO_VALIDAZIONE_LABELS[mat.stato_validazione]}
-                                </Badge>
-                              </div>
-                            </div>
-                            <p className="font-semibold text-sm truncate mb-1" title={mat.nome_file}>{mat.nome_file}</p>
-                            {timeStr && <p className="text-[9px] text-gray-400 flex items-center gap-1"><Clock className="w-2 h-2"/> Inviato alle {timeStr}</p>}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-10 bg-gray-50/50 rounded-xl border-2 border-dashed">
-                <p className="text-muted-foreground text-sm">Nessun materiale trovato.</p>
-              </div>
-            )}
+            <Tabs defaultValue="nexus">
+              <TabsList className="w-full mb-6">
+                <TabsTrigger value="nexus" className="flex-1">Inviati da Nexus (Agenzia)</TabsTrigger>
+                <TabsTrigger value="client" className="flex-1">Inviati da Voi</TabsTrigger>
+              </TabsList>
+
+              {[
+                { val: 'nexus', data: agencyMaterials },
+                { val: 'client', data: clientMaterials }
+              ].map(section => (
+                <TabsContent key={section.val} value={section.val} className="space-y-6">
+                  {Object.keys(getGrouped(section.data)).length > 0 ? (
+                    Object.keys(getGrouped(section.data)).map(date => (
+                      <div key={date} className="space-y-4">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{date}</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {getGrouped(section.data)[date].map((mat: Material) => {
+                            const typeInfo = getFileTypeInfo(mat.nome_file, !!mat.link_esterno);
+                            return (
+                              <Card key={mat.id} className="p-4 flex flex-col gap-2 hover:border-indigo-200 transition-colors">
+                                <div className="flex justify-between items-start">
+                                  <div className={`p-2 ${typeInfo.bg} rounded`}><typeInfo.icon className={`w-5 h-5 ${typeInfo.color}`} /></div>
+                                  <MaterialeStatoChip stato={mat.stato_validazione} />
+                                </div>
+                                <p className="font-bold text-xs truncate" title={mat.nome_file}>{mat.nome_file}</p>
+                                {mat.link_esterno && <a href={mat.link_esterno} target="_blank" className="text-[10px] text-blue-600 underline font-bold">Apri Link</a>}
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  ) : <div className="text-center py-10 text-gray-400 text-sm">Nessun asset trovato.</div>}
+                </TabsContent>
+              ))}
+            </Tabs>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function MaterialeStatoChip({ stato }: { stato: StatoValidazione }) {
+  return <Badge className={`${STATO_VALIDAZIONE_COLORS[stato].bg} ${STATO_VALIDAZIONE_COLORS[stato].text} border-none text-[9px]`}>{STATO_VALIDAZIONE_LABELS[stato]}</Badge>;
 }

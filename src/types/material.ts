@@ -1,9 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
-import { FileText, Image as ImageIcon, Video, Camera, Share2, Globe, Printer } from 'lucide-react';
+import { FileText, Image as ImageIcon, Video, Camera, Share2, Globe, Printer, Link as LinkIcon } from 'lucide-react';
 
 export type StatoValidazione = 'in_attesa' | 'validato' | 'rifiutato';
 export type DestinazioneAsset = 'social' | 'sito' | 'offline';
-export type TipoAsset = 'grafica' | 'foto' | 'video' | 'documento';
+export type TipoAsset = 'grafica' | 'foto' | 'video' | 'documento' | 'link';
 
 export const STATO_VALIDAZIONE_LABELS: Record<StatoValidazione, string> = {
   in_attesa: 'In attesa',
@@ -33,14 +33,19 @@ export interface Material {
   id: string;
   nome_file: string;
   url_storage: string | null;
+  link_esterno?: string | null; // Per video > 100MB o link WeTransfer
   caricato_da: string; // UID utente
+  ruolo_caricatore: 'admin' | 'cliente'; // Per separazione archivio
   stato_validazione: StatoValidazione;
-  destinazione: DestinazioneAsset; // Campo per suddivisione Social/Sito/Offline
+  destinazione: DestinazioneAsset; 
   note_rifiuto: string | null;
   creato_il: Timestamp;
 }
 
-export function getFileTypeInfo(fileName: string) {
+export function getFileTypeInfo(fileName: string, isLink?: boolean) {
+  if (isLink) {
+    return { type: 'link' as TipoAsset, label: 'Link Esterno', icon: LinkIcon, color: 'text-blue-600', bg: 'bg-blue-50' };
+  }
   const extension = fileName.split('.').pop()?.toLowerCase();
   
   if (['svg', 'ai', 'eps'].includes(extension || '')) {

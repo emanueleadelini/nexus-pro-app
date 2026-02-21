@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, UploadCloud, Edit3, Image as ImageIcon, Filter, PieChart, Info, AlertTriangle, Trash2, MoreHorizontal, MessageSquare, Share2 } from 'lucide-react';
+import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, UploadCloud, Edit3, Image as ImageIcon, Filter, PieChart, Info, AlertTriangle, Trash2, MoreHorizontal, MessageSquare, Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
 import { CreaPostManualeModal } from '@/components/admin/crea-post-manuale-modal';
@@ -105,21 +104,26 @@ export default function ClienteDettaglio() {
   if (!client) return <div className="p-8 text-center">Cliente non trovato.</div>;
 
   const filteredMaterials = materials?.filter(mat => {
-    const typeInfo = getFileTypeInfo(mat.nome_file);
+    const typeInfo = getFileTypeInfo(mat.nome_file, !!mat.link_esterno);
     const matchesTipo = tipoFilter === 'all' || typeInfo.type === tipoFilter;
     const matchesDest = destFilter === 'all' || mat.destinazione === destFilter;
     return matchesTipo && matchesDest;
   }) || [];
 
-  const groupedMaterials = filteredMaterials.reduce((acc: any, mat: any) => {
-    let date = 'Data non disponibile';
-    if (mat.creato_il && typeof mat.creato_il.toDate === 'function') {
-      date = mat.creato_il.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(mat);
-    return acc;
-  }, {});
+  const agencyMaterials = filteredMaterials.filter(m => m.ruolo_caricatore === 'admin');
+  const clientMaterials = filteredMaterials.filter(m => m.ruolo_caricatore === 'cliente');
+
+  const getGrouped = (mats: Material[]) => {
+    return mats.reduce((acc: any, mat: any) => {
+      let date = 'Data non disponibile';
+      if (mat.creato_il && typeof mat.creato_il.toDate === 'function') {
+        date = mat.creato_il.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(mat);
+      return acc;
+    }, {});
+  };
 
   const postsOnSelectedDate = posts?.filter(post => {
     if (!post.data_pubblicazione || !selectedDate || typeof post.data_pubblicazione.toDate !== 'function') return false;
@@ -146,7 +150,7 @@ export default function ClienteDettaglio() {
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <Button onClick={() => setIsUploadOpen(true)} variant="outline" className="flex-1 md:flex-none gap-2 border-indigo-200 text-indigo-700">
-            <UploadCloud className="w-4 h-4" /> Carica Asset
+            <UploadCloud className="w-4 h-4" /> Invia Asset
           </Button>
           <Button onClick={() => setIsGeneraOpen(true)} className="flex-1 md:flex-none gap-2 bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-200">
             <Sparkles className="w-4 h-4" /> Genera con AI
@@ -172,12 +176,15 @@ export default function ClienteDettaglio() {
           )}
 
           <Tabs defaultValue="calendar" className="w-full">
-            <TabsList className="bg-white border-b border-gray-200 p-0 h-12 w-full justify-start rounded-none mb-6">
-              <TabsTrigger value="calendar" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-8 text-sm font-medium">
+            <TabsList className="bg-white border-b border-gray-200 p-0 h-12 w-full justify-start rounded-none mb-6 overflow-x-auto overflow-y-hidden">
+              <TabsTrigger value="calendar" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
                 <CalendarDays className="w-4 h-4 mr-2" /> Calendario Editoriale
               </TabsTrigger>
-              <TabsTrigger value="materials" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-8 text-sm font-medium">
-                <FolderOpen className="w-4 h-4 mr-2" /> Archivio Asset
+              <TabsTrigger value="materials_agency" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
+                <FolderOpen className="w-4 h-4 mr-2" /> Archivio Nexus
+              </TabsTrigger>
+              <TabsTrigger value="materials_client" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
+                <Plus className="w-4 h-4 mr-2" /> Asset dal Cliente
               </TabsTrigger>
             </TabsList>
 
@@ -210,11 +217,10 @@ export default function ClienteDettaglio() {
                     <div className="grid gap-6">
                       {postsOnSelectedDate.map(post => {
                         const materialAssociato = materials?.find(m => m.id === post.materiale_id);
-                        const typeInfo = materialAssociato ? getFileTypeInfo(materialAssociato.nome_file) : null;
+                        const typeInfo = materialAssociato ? getFileTypeInfo(materialAssociato.nome_file, !!materialAssociato.link_esterno) : null;
                         
                         return (
                           <Card key={post.id} className="rounded-xl border-gray-200/60 overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
-                            {/* Header Post "Social" */}
                             <div className="p-4 flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10 border border-gray-100">
@@ -231,7 +237,7 @@ export default function ClienteDettaglio() {
                                   </div>
                                   <p className="text-[10px] text-gray-400 flex items-center gap-1">
                                     <Clock className="w-2.5 h-2.5" />
-                                    Pianificato per: {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Da definire'}
+                                    Pianificato: {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Da definire'}
                                   </p>
                                 </div>
                               </div>
@@ -244,25 +250,22 @@ export default function ClienteDettaglio() {
                                 </Button>
                               </div>
                             </div>
-
-                            {/* Corpo del Post (Copy) */}
                             <div className="px-4 pb-3">
-                              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                {post.testo}
-                              </p>
+                              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.testo}</p>
                             </div>
-
-                            {/* Media Placeholder (Immagine/Video realistico) */}
-                            {materialAssociato ? (
-                              <div className="relative aspect-video bg-gray-100 border-y border-gray-50 flex flex-col items-center justify-center group">
-                                {typeInfo?.type === 'foto' || typeInfo?.type === 'grafica' ? (
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-300">
-                                    <ImageIcon className="w-12 h-12 mb-2" />
-                                    <span className="text-xs font-medium px-4 text-center truncate w-full">{materialAssociato.nome_file}</span>
+                            {materialAssociato && (
+                              <div className="relative aspect-video bg-gray-100 border-y border-gray-50 flex flex-col items-center justify-center group overflow-hidden">
+                                {materialAssociato.link_esterno ? (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-50 text-blue-400">
+                                    <LinkIcon className="w-12 h-12 mb-2" />
+                                    <span className="text-[10px] font-bold uppercase tracking-tight">Link Esterno</span>
+                                    <a href={materialAssociato.link_esterno} target="_blank" rel="noopener" className="mt-2 flex items-center gap-1 text-[10px] bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                                      Apri Link <ExternalLink className="w-3 h-3" />
+                                    </a>
                                   </div>
                                 ) : (
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400">
-                                    <typeInfo.icon className="w-12 h-12 mb-2" />
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-300">
+                                    {typeInfo?.icon && <typeInfo.icon className="w-12 h-12 mb-2" />}
                                     <span className="text-xs font-medium px-4 text-center truncate w-full">{materialAssociato.nome_file}</span>
                                   </div>
                                 )}
@@ -272,11 +275,7 @@ export default function ClienteDettaglio() {
                                    </Badge>
                                 </div>
                               </div>
-                            ) : (
-                              <div className="h-px bg-gray-100" />
                             )}
-
-                            {/* Footer Post con azioni realiste */}
                             <div className="p-2 px-4 flex items-center justify-between border-t border-gray-50">
                                <div className="flex gap-4 text-gray-400">
                                   <div className="flex items-center gap-1 text-[10px] font-bold uppercase"><MessageSquare className="w-3.5 h-3.5" /> Commenti</div>
@@ -284,19 +283,13 @@ export default function ClienteDettaglio() {
                                </div>
                                <div className="flex gap-2">
                                   {post.stato === 'bozza' && (
-                                    <Button size="sm" onClick={() => updatePostState(post.id, 'da_approvare')} className="h-8 text-[10px] font-bold bg-orange-600 hover:bg-orange-700 uppercase tracking-tighter">
-                                      Invia per approvazione
-                                    </Button>
+                                    <Button size="sm" onClick={() => updatePostState(post.id, 'da_approvare')} className="h-8 text-[10px] font-bold bg-orange-600 hover:bg-orange-700 uppercase tracking-tighter">Invia</Button>
                                   )}
                                   {post.stato === 'da_approvare' && (
-                                    <Button size="sm" onClick={() => updatePostState(post.id, 'approvato')} className="h-8 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 uppercase tracking-tighter">
-                                      Approva Post
-                                    </Button>
+                                    <Button size="sm" onClick={() => updatePostState(post.id, 'approvato')} className="h-8 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 uppercase tracking-tighter">Approva</Button>
                                   )}
                                   {post.stato === 'approvato' && (
-                                    <Button size="sm" onClick={() => updatePostState(post.id, 'pubblicato')} className="h-8 text-[10px] font-bold bg-green-600 hover:bg-green-700 uppercase tracking-tighter">
-                                      Segna pubblicato
-                                    </Button>
+                                    <Button size="sm" onClick={() => updatePostState(post.id, 'pubblicato')} className="h-8 text-[10px] font-bold bg-green-600 hover:bg-green-700 uppercase tracking-tighter">Pubblica</Button>
                                   )}
                                </div>
                             </div>
@@ -306,149 +299,123 @@ export default function ClienteDettaglio() {
                     </div>
                   ) : (
                     <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-100">
-                      <CalendarDays className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                      <p className="text-muted-foreground text-sm">Nessun post programmato per questa data.</p>
-                      <Button variant="link" onClick={() => setSelectedDate(undefined)} className="text-indigo-600 mt-2">Mostra tutti i post</Button>
+                      <p className="text-muted-foreground text-sm">Nessun post pianificato.</p>
                     </div>
                   )}
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="materials" className="space-y-6">
-              <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-bold text-gray-500 uppercase tracking-tight">Filtra per:</span>
-                </div>
-                
-                <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                  <SelectTrigger className="w-[180px] bg-white">
-                    <SelectValue placeholder="Tipologia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutti i tipi</SelectItem>
-                    <SelectItem value="grafica">🎨 Grafiche</SelectItem>
-                    <SelectItem value="foto">📸 Foto</SelectItem>
-                    <SelectItem value="video">🎥 Video</SelectItem>
-                    <SelectItem value="documento">📄 Documenti</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={destFilter} onValueChange={setDestFilter}>
-                  <SelectTrigger className="w-[180px] bg-white">
-                    <SelectValue placeholder="Destinazione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutte le destinazioni</SelectItem>
-                    <SelectItem value="social">📱 Social Media</SelectItem>
-                    <SelectItem value="sito">🌐 Sito Web</SelectItem>
-                    <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button variant="ghost" size="sm" onClick={() => {setTipoFilter('all'); setDestFilter('all');}} className="text-xs text-gray-400 hover:text-indigo-600">
-                  Reset Filtri
-                </Button>
-              </div>
-
-              {isMaterialsLoading ? <Skeleton className="h-64" /> : Object.keys(groupedMaterials).length > 0 ? (
-                Object.keys(groupedMaterials).map(date => (
-                  <div key={date} className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest bg-white px-4 py-1 rounded-full border shadow-sm">{date}</h3>
-                      <div className="h-px bg-gray-100 flex-1" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {groupedMaterials[date].map((mat: Material) => {
-                        const typeInfo = getFileTypeInfo(mat.nome_file);
-                        const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
-                        const timeStr = mat.creato_il && typeof mat.creato_il.toDate === 'function' ? mat.creato_il.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
-
-                        return (
-                          <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm overflow-hidden flex flex-col hover:border-indigo-300 transition-colors">
-                            <div className="p-4 flex-1">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className={`p-3 ${typeInfo.bg} rounded-xl`}>
-                                  <typeInfo.icon className={`w-6 h-6 ${typeInfo.color}`} />
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                  <Badge variant="outline" className="text-[9px] font-bold uppercase py-0 px-2 flex gap-1 items-center bg-gray-50">
-                                    <DestIcon className="w-2 h-2" /> {DESTINAZIONE_LABELS[mat.destinazione]}
-                                  </Badge>
-                                  <MaterialeStatoChip stato={mat.stato_validazione} />
-                                </div>
-                              </div>
-                              <p className="font-semibold text-sm truncate mb-1" title={mat.nome_file}>{mat.nome_file}</p>
-                              {timeStr && <p className="text-[10px] text-gray-400 flex items-center gap-1"><Clock className="w-2 h-2"/> Caricato alle {timeStr}</p>}
-                            </div>
-                            {mat.stato_validazione === 'in_attesa' && (
-                              <div className="p-3 bg-gray-50 border-t flex gap-2">
-                                <Button size="sm" variant="outline" className="flex-1 text-red-600 border-red-100" onClick={() => validateMaterial(mat.id, 'rifiutato')}>Rifiuta</Button>
-                                <Button size="sm" className="flex-1 bg-green-600" onClick={() => validateMaterial(mat.id, 'validato')}>Valida</Button>
-                              </div>
-                            )}
-                          </Card>
-                        );
-                      })}
-                    </div>
+            {[
+              { value: 'materials_agency', title: 'Asset Inviati da Nexus', data: agencyMaterials },
+              { value: 'materials_client', title: 'Asset Inviati dal Cliente', data: clientMaterials }
+            ].map((section) => (
+              <TabsContent key={section.value} value={section.value} className="space-y-6">
+                <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-bold text-gray-500 uppercase tracking-tight">Filtra:</span>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-100">
-                  <FolderOpen className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                  <p className="text-muted-foreground">Nessun asset trovato con i filtri selezionati.</p>
+                  <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                    <SelectTrigger className="w-[160px] bg-white text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tutti</SelectItem>
+                      <SelectItem value="grafica">🎨 Grafiche</SelectItem>
+                      <SelectItem value="foto">📸 Foto</SelectItem>
+                      <SelectItem value="video">🎥 Video</SelectItem>
+                      <SelectItem value="documento">📄 Documenti</SelectItem>
+                      <SelectItem value="link">🔗 Link</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={destFilter} onValueChange={setDestFilter}>
+                    <SelectTrigger className="w-[160px] bg-white text-xs"><SelectValue placeholder="Destinazione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tutte</SelectItem>
+                      <SelectItem value="social">📱 Social</SelectItem>
+                      <SelectItem value="sito">🌐 Sito</SelectItem>
+                      <SelectItem value="offline">🖨️ Offline</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </TabsContent>
+
+                {isMaterialsLoading ? <Skeleton className="h-64" /> : Object.keys(getGrouped(section.data)).length > 0 ? (
+                  Object.keys(getGrouped(section.data)).map(date => (
+                    <div key={date} className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white px-4 py-1 rounded-full border shadow-sm">{date}</h3>
+                        <div className="h-px bg-gray-100 flex-1" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {getGrouped(section.data)[date].map((mat: Material) => {
+                          const typeInfo = getFileTypeInfo(mat.nome_file, !!mat.link_esterno);
+                          const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
+                          const timeStr = mat.creato_il && typeof mat.creato_il.toDate === 'function' ? mat.creato_il.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                          return (
+                            <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm overflow-hidden flex flex-col hover:border-indigo-300 transition-colors">
+                              <div className="p-4 flex-1">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className={`p-3 ${typeInfo.bg} rounded-xl`}><typeInfo.icon className={`w-6 h-6 ${typeInfo.color}`} /></div>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <Badge variant="outline" className="text-[8px] font-bold uppercase py-0 px-2 flex gap-1 items-center bg-gray-50">
+                                      <DestIcon className="w-2 h-2" /> {DESTINAZIONE_LABELS[mat.destinazione]}
+                                    </Badge>
+                                    <MaterialeStatoChip stato={mat.stato_validazione} />
+                                  </div>
+                                </div>
+                                <p className="font-semibold text-xs truncate mb-1" title={mat.nome_file}>{mat.nome_file}</p>
+                                {mat.link_esterno && (
+                                  <a href={mat.link_esterno} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-[10px] text-blue-600 font-bold hover:underline mb-2">
+                                    <LinkIcon className="w-2.5 h-2.5" /> Apri Link Esterno
+                                  </a>
+                                )}
+                                {timeStr && <p className="text-[10px] text-gray-400 flex items-center gap-1"><Clock className="w-2 h-2"/> {timeStr}</p>}
+                              </div>
+                              {mat.stato_validazione === 'in_attesa' && (
+                                <div className="p-3 bg-gray-50 border-t flex gap-2">
+                                  <Button size="sm" variant="outline" className="flex-1 text-red-600 border-red-100 h-8 text-[10px]" onClick={() => validateMaterial(mat.id, 'rifiutato')}>Rifiuta</Button>
+                                  <Button size="sm" className="flex-1 bg-green-600 h-8 text-[10px]" onClick={() => validateMaterial(mat.id, 'validato')}>Valida</Button>
+                                </div>
+                              )}
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-100">
+                    <p className="text-muted-foreground text-sm">Nessun asset trovato in questa sezione.</p>
+                  </div>
+                )}
+              </TabsContent>
+            ))}
           </Tabs>
         </div>
 
         <div className="space-y-6">
           <Card className="rounded-xl border-gray-200/50 shadow-md overflow-hidden sticky top-24">
             <CardHeader className="bg-indigo-600 text-white pb-6">
-              <CardTitle className="text-lg font-headline flex items-center gap-2">
-                <PieChart className="w-5 h-5" /> Crediti Piano
-              </CardTitle>
-              <CardDescription className="text-indigo-100 text-xs">
-                Monitoraggio abbonamento cliente
-              </CardDescription>
+              <CardTitle className="text-lg font-headline flex items-center gap-2"><PieChart className="w-5 h-5" /> Crediti Piano</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="flex flex-col items-center justify-center py-4 bg-gray-50 rounded-xl border border-gray-100">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Post Rimanenti</span>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-5xl font-bold font-headline ${postRimanenti <= 1 ? 'text-red-600' : 'text-gray-900'}`}>
-                    {postRimanenti}
-                  </span>
+                  <span className={`text-5xl font-bold font-headline ${postRimanenti <= 1 ? 'text-red-600' : 'text-gray-900'}`}>{postRimanenti}</span>
                   <span className="text-gray-400 font-medium">/ {postTotali}</span>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-tighter">
-                  <span className="text-gray-400">Utilizzo Calendario</span>
-                  <span className={usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}>
-                    {postUsati} / {postTotali}
-                  </span>
+                  <span className="text-gray-400">Utilizzo</span>
+                  <span className={usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}>{postUsati} / {postTotali}</span>
                 </div>
-                <Progress 
-                  value={usagePercent} 
-                  className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} 
-                />
-              </div>
-
-              <div className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 flex gap-3 items-start">
-                <Info className="w-4 h-4 text-indigo-500 mt-0.5" />
-                <p className="text-[10px] text-indigo-700 leading-relaxed">
-                  I crediti sono collegati direttamente al numero di post inseriti nel Calendario Editoriale.
-                </p>
+                <Progress value={usagePercent} className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} />
               </div>
             </CardContent>
             <CardFooter className="border-t bg-gray-50/50 p-4">
-               <Button onClick={() => setIsPianoOpen(true)} variant="outline" className="w-full text-xs font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50">
-                 Modifica Piano Abbonamento
-               </Button>
+               <Button onClick={() => setIsPianoOpen(true)} variant="outline" className="w-full text-xs font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50">Modifica Piano</Button>
             </CardFooter>
           </Card>
         </div>
