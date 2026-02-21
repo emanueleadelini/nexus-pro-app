@@ -1,19 +1,21 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, Loader2, RotateCcw, Check } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sparkles, Loader2, RotateCcw, Check, UploadCloud, X, FileIcon, ImageIcon } from 'lucide-react';
 import { generateSocialPost, GeneratePostOutput } from '@/ai/flows/generate-post-ai-flow';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { DestinazioneAsset } from '@/types/material';
 
 const PIATTAFORME = [
   { id: 'insta', label: 'Instagram', istruzioni: 'caption coinvolgente con emoji e hashtag, max 2200 caratteri' },
@@ -40,6 +42,7 @@ interface Props {
 }
 
 export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clienteSettore }: Props) {
+  const { user } = useUser();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [platId, setPlatId] = useState(PIATTAFORME[0].id);
@@ -47,8 +50,19 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
   const [argomento, setArgomento] = useState('');
   const [note, setNote] = useState('');
   const [result, setResult] = useState<GeneratePostOutput | null>(null);
+  
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [destinazione, setDestinazione] = useState<DestinazioneAsset>('social');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const db = useFirestore();
   const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
 
   const handleGenera = async () => {
     setLoading(true);
@@ -70,39 +84,55 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
     }
   };
 
-  const handleSalva = () => {
-    if (!result) return;
+  const handleSalva = async () => {
+    if (!result || !user) return;
     setLoading(true);
     
-    const postColRef = collection(db, 'clienti', clienteId, 'post');
-    const clientRef = doc(db, 'clienti', clienteId);
-    
-    const postData = {
-      titolo: result.titolo,
-      testo: result.testo,
-      stato: 'bozza',
-      data_pubblicazione: null,
-      creato_il: serverTimestamp(),
-      aggiornato_il: serverTimestamp()
-    };
+    try {
+      let materialeId = null;
 
-    addDoc(postColRef, postData)
-      .then(() => {
-        updateDoc(clientRef, {
-          post_usati: increment(1)
-        }).catch(e => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: clientRef.path, operation: 'update' }));
+      // 1. Carica il materiale se selezionato
+      if (selectedFile) {
+        const matRef = await addDoc(collection(db, 'clienti', clienteId, 'materiali'), {
+          nome_file: selectedFile.name,
+          url_storage: null,
+          caricato_da: user.uid,
+          destinazione: destinazione,
+          stato_validazione: 'validato',
+          note_rifiuto: null,
+          creato_il: serverTimestamp()
         });
+        materialeId = matRef.id;
+      }
 
-        toast({ title: 'Bozza salvata!', description: 'Il post è stato aggiunto al calendario e i crediti aggiornati.' });
-        handleClose();
-      })
-      .catch(e => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: postColRef.path, operation: 'create', requestResourceData: postData }));
-      })
-      .finally(() => {
-        setLoading(false);
+      // 2. Salva il post
+      const postColRef = collection(db, 'clienti', clienteId, 'post');
+      const clientRef = doc(db, 'clienti', clienteId);
+      
+      const postData = {
+        titolo: result.titolo,
+        testo: result.testo,
+        stato: 'bozza',
+        materiale_id: materialeId,
+        data_pubblicazione: null,
+        creato_il: serverTimestamp(),
+        aggiornato_il: serverTimestamp()
+      };
+
+      await addDoc(postColRef, postData);
+
+      // 3. Incrementa crediti
+      await updateDoc(clientRef, {
+        post_usati: increment(1)
       });
+
+      toast({ title: 'Bozza salvata!', description: 'Il post è stato aggiunto al calendario con i relativi asset.' });
+      handleClose();
+    } catch (e: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `clienti/${clienteId}`, operation: 'write' }));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -110,6 +140,8 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
     setResult(null);
     setArgomento('');
     setNote('');
+    setSelectedFile(null);
+    setDestinazione('social');
     onClose();
   };
 
@@ -120,7 +152,7 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
           <DialogTitle className="flex items-center gap-2 text-violet-600">
             <Sparkles className="w-5 h-5" /> Genera Bozza con IA
           </DialogTitle>
-          <DialogDescription>Gemini creerà una bozza personalizzata.</DialogDescription>
+          <DialogDescription>Gemini creerà una bozza personalizzata e potrai aggiungere i contenuti multimediali.</DialogDescription>
         </DialogHeader>
 
         {step === 1 ? (
@@ -165,7 +197,7 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
           <div className="space-y-6 py-4">
             <div className="p-4 bg-indigo-50 rounded-lg flex items-center justify-between">
                <span className="text-xs font-bold uppercase text-indigo-600">Reminder: {PIATTAFORME.find(p => p.id === platId)?.label} / {TONI.find(t => t.id === tonoId)?.label}</span>
-               <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-indigo-600"><RotateCcw className="w-3 h-3 mr-1"/> Modifica</Button>
+               <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-indigo-600"><RotateCcw className="w-3 h-3 mr-1"/> Modifica Prompt</Button>
             </div>
             
             <div className="space-y-4">
@@ -175,14 +207,56 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
               </div>
               <div className="space-y-2">
                 <Label>Testo Generato</Label>
-                <Textarea value={result?.testo} onChange={(e) => setResult(prev => prev ? {...prev, testo: e.target.value} : null)} className="min-h-[200px]" />
+                <Textarea value={result?.testo} onChange={(e) => setResult(prev => prev ? {...prev, testo: e.target.value} : null)} className="min-h-[150px]" />
+              </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <Label className="flex items-center gap-2 text-violet-600 font-bold">
+                  <ImageIcon className="w-4 h-4" /> Aggiungi Contenuto al Post
+                </Label>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${selectedFile ? 'border-violet-400 bg-violet-50/50' : 'border-gray-200 hover:border-violet-300 hover:bg-gray-50'}`}
+                >
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                  {selectedFile ? (
+                    <div className="flex flex-col items-center text-center">
+                      <div className="bg-violet-600 p-2 rounded-lg mb-2"><FileIcon className="w-6 h-6 text-white" /></div>
+                      <span className="text-sm font-semibold text-gray-900 truncate max-w-[250px]">{selectedFile.name}</span>
+                      <Button type="button" variant="ghost" size="sm" className="mt-2 text-red-500 hover:text-red-600 h-7" onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}>
+                        <X className="w-3 h-3 mr-1" /> Rimuovi
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-8 h-8 text-gray-300" />
+                      <p className="text-xs font-medium text-gray-500 text-center">Carica la grafica o il video per questo post</p>
+                    </>
+                  )}
+                </div>
+
+                {selectedFile && (
+                  <div className="space-y-2">
+                    <Label>Destinazione Asset</Label>
+                    <Select value={destinazione} onValueChange={(val: DestinazioneAsset) => setDestinazione(val)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona destinazione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="social">📱 Social Media</SelectItem>
+                        <SelectItem value="sito">🌐 Sito Web</SelectItem>
+                        <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={handleGenera} disabled={loading}>Rigenera</Button>
+              <Button variant="outline" className="flex-1" onClick={handleGenera} disabled={loading}>Rigenera Testo</Button>
               <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={handleSalva} disabled={loading}>
-                {loading ? <Loader2 className="animate-spin" /> : 'Salva come Bozza'}
+                {loading ? <Loader2 className="animate-spin" /> : 'Salva Post Completo'}
               </Button>
             </div>
           </div>
