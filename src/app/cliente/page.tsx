@@ -95,15 +95,18 @@ export default function ClienteDashboard() {
   const usagePercent = client.post_totali > 0 ? (client.post_usati / client.post_totali) * 100 : 0;
 
   const postsOnSelectedDate = posts?.filter(post => {
-    if (!post.data_pubblicazione || !selectedDate) return false;
+    if (!post.data_pubblicazione || !selectedDate || typeof post.data_pubblicazione.toDate !== 'function') return false;
     const pubDate = post.data_pubblicazione.toDate();
     return pubDate.toDateString() === selectedDate.toDateString();
   }) || [];
 
-  const daysWithPosts = posts?.filter(p => p.data_pubblicazione).map(p => p.data_pubblicazione.toDate().toDateString()) || [];
+  const daysWithPosts = posts?.filter(p => p.data_pubblicazione && typeof p.data_pubblicazione.toDate === 'function').map(p => p.data_pubblicazione.toDate().toDateString()) || [];
 
   const groupedMaterials = materials?.reduce((acc: any, mat: any) => {
-    const date = mat.creato_il?.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) || 'Data non disponibile';
+    let date = 'Data non disponibile';
+    if (mat.creato_il && typeof mat.creato_il.toDate === 'function') {
+      date = mat.creato_il.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
     if (!acc[date]) acc[date] = [];
     acc[date].push(mat);
     return acc;
@@ -228,7 +231,7 @@ export default function ClienteDashboard() {
                         <CardTitle className="text-lg font-headline font-semibold">{post.titolo}</CardTitle>
                         <CardDescription className="text-xs flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {post.data_pubblicazione ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
+                          {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
                         </CardDescription>
                       </div>
                       <Badge className={`${STATO_POST_COLORS[post.stato as StatoPost].bg} ${STATO_POST_COLORS[post.stato as StatoPost].text} border-none font-medium text-[10px]`}>

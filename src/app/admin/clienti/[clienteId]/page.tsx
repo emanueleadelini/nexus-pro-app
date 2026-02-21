@@ -69,7 +69,10 @@ export default function ClienteDettaglio() {
   if (!client) return <div className="p-8 text-center">Cliente non trovato.</div>;
 
   const groupedMaterials = materials?.reduce((acc: any, mat: any) => {
-    const date = mat.creato_il?.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) || 'Data non disponibile';
+    let date = 'Data non disponibile';
+    if (mat.creato_il && typeof mat.creato_il.toDate === 'function') {
+      date = mat.creato_il.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
     if (!acc[date]) acc[date] = [];
     acc[date].push(mat);
     return acc;
@@ -77,13 +80,13 @@ export default function ClienteDettaglio() {
 
   // Filtra i post per la data selezionata nel calendario
   const postsOnSelectedDate = posts?.filter(post => {
-    if (!post.data_pubblicazione || !selectedDate) return false;
+    if (!post.data_pubblicazione || !selectedDate || typeof post.data_pubblicazione.toDate !== 'function') return false;
     const pubDate = post.data_pubblicazione.toDate();
     return pubDate.toDateString() === selectedDate.toDateString();
   }) || [];
 
   // Date che hanno dei post programmati (per evidenziarle nel calendario)
-  const daysWithPosts = posts?.filter(p => p.data_pubblicazione).map(p => p.data_pubblicazione.toDate().toDateString()) || [];
+  const daysWithPosts = posts?.filter(p => p.data_pubblicazione && typeof p.data_pubblicazione.toDate === 'function').map(p => p.data_pubblicazione.toDate().toDateString()) || [];
 
   return (
     <div className="space-y-8 p-4 md:p-0">
@@ -154,7 +157,7 @@ export default function ClienteDettaglio() {
                             <div className="flex items-center gap-2 mt-1">
                                <Clock className="w-3 h-3 text-gray-400" />
                                <span className="text-xs text-gray-400">
-                                 {post.data_pubblicazione ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
+                                 {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
                                </span>
                             </div>
                           </div>
