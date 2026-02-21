@@ -1,0 +1,114 @@
+rules_version = '2';
+
+/**
+ * FIRESTORE SECURITY RULES - COMMUNICATION AGENCY MANAGEMENT APP
+ * 
+ * Core Philosophy:
+ * This ruleset implements a strict multi-tenant authorization model tailored for an agency-client 
+ * relationship. It uses a Role-Based Access Control (RBAC) system where users are either 'admin' 
+ * (agency staff) or 'cliente' (external clients).
+ * 
+ * Data Structure:
+ * - /users/{uid}: Central profile storage containing roles and client associations.
+ * - /clienti/{clienteId}: Top-level organization for client entities.
+ * - /clienti/{clienteId}/post/...: Sub-collection for social media content.
+ * - /clienti/{clienteId}/materiali/...: Sub-collection for uploaded assets.
+ * 
+ * Key Security Decisions:
+ * 1. Admin Supremacy: Users with the 'admin' role have global read/write access to all client data.
+ * 2. Client Isolation: Users with the 'cliente' role are restricted to their own data tree 
+ *    based on the 'cliente_id' stored in their user profile.
+ * 3. Functional Constraints: Clients can create 'materiali' but only update the status 
+ *    of 'post' to 'approvato'.
+ * 4. Relational Integrity: Security rules verify that the user's profile 'cliente_id' matches 
+ *    the path parameter {clienteId} for all sub-collection access.
+ * 
+ * Prototyping Mode:
+ * Rules strictly enforce authorization (WHO can access) but remain flexible on data schema 
+ * (WHAT is written) to facilitate rapid development iteration.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+
+    /** @description Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Fetches the authenticated user's profile document. */
+    function getAuthProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    /** @description Checks if the authenticated user has the 'admin' role. */
+    function isAdmin() {
+      return isSignedIn() && getAuthProfile().data.ruolo == 'admin';
+    }
+
+    /** @description Checks if the authenticated user belongs to a specific client company. */
+    function isClientOf(clienteId) {
+      return isSignedIn() && getAuthProfile().data.cliente_id == clienteId;
+    }
+
+    /** @description Checks if the current request is coming from the document owner. */
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description User profile documents. Users can read their own; Admins manage all.
+     * @path /users/{uid}
+     * @allow (get) If auth.uid matches {uid}.
+     * @deny (list) Prevent public user listing.
+     * @principle Ownership-based read; Admin-managed writes.
+     */
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Client company records. Admins have full control; Clients can read their own.
+     * @path /clienti/{clienteId}
+     * @allow (read) If admin OR if user's cliente_id matches path.
+     * @deny (write) If user is not an admin.
+     * @principle Role-based path authorization.
+     */
+    match /clienti/{clienteId} {
+      allow get, list: if isAdmin() || isClientOf(clienteId);
+      allow create, update, delete: if isAdmin();
+
+      /**
+       * @description Editorial posts for a client.
+       * @path /clienti/{clienteId}/post/{postId}
+       * @allow (update) If client is approving the post (status == 'approvato').
+       * @deny (create/delete) If user is not an admin.
+       * @principle Shared access with specific state-change permissions for clients.
+       */
+      match /post/{postId} {
+        allow get, list: if isAdmin() || isClientOf(clienteId);
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || (isClientOf(clienteId) && request.resource.data.stato == 'approvato' && resource != null);
+      }
+
+      /**
+       * @description Materials/Assets uploaded by or for a client.
+       * @path /clienti/{clienteId}/materiali/{materialId}
+       * @allow (create) If client is uploading for their own ID.
+       * @deny (update/delete) If user is not an admin (clients cannot edit/delete after upload).
+       * @principle Self-creation for sub-collections with immutable history for clients.
+       */
+      match /materiali/{materialId} {
+        allow get, list: if isAdmin() || isClientOf(clienteId);
+        allow create: if isAdmin() || isClientOf(clienteId);
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}
