@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { CalendarCheck, Upload, ArrowUpRight, Check, Loader2, User, UploadCloud, X, FileIcon } from 'lucide-react';
+import { CalendarCheck, Upload, ArrowUpRight, Check, Loader2, User, UploadCloud, X, FileIcon, CalendarDays, Clock } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function ClienteDashboard() {
   const { user } = useUser();
@@ -22,6 +23,7 @@ export default function ClienteDashboard() {
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function ClienteDashboard() {
   const approvePost = async (postId: string) => {
     if (!clienteId) return;
     const ref = doc(db, 'clienti', clienteId, 'post', postId);
-    await updateDoc(ref, { 
+    updateDoc(ref, { 
       stato: 'approvato', 
       aggiornato_il: serverTimestamp() 
     });
@@ -91,6 +93,14 @@ export default function ClienteDashboard() {
   if (!client) return <div className="p-8">Errore caricamento dati cliente.</div>;
 
   const usagePercent = client.post_totali > 0 ? (client.post_usati / client.post_totali) * 100 : 0;
+
+  const postsOnSelectedDate = posts?.filter(post => {
+    if (!post.data_pubblicazione || !selectedDate) return false;
+    const pubDate = post.data_pubblicazione.toDate();
+    return pubDate.toDateString() === selectedDate.toDateString();
+  }) || [];
+
+  const daysWithPosts = posts?.filter(p => p.data_pubblicazione).map(p => p.data_pubblicazione.toDate().toDateString()) || [];
 
   const groupedMaterials = materials?.reduce((acc: any, mat: any) => {
     const date = mat.creato_il?.toDate().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) || 'Data non disponibile';
@@ -170,19 +180,56 @@ export default function ClienteDashboard() {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="p-4 border-gray-200/50 shadow-sm hidden lg:block">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Calendario PED</h3>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border-none"
+              modifiers={{
+                hasPost: (date) => daysWithPosts.includes(date.toDateString())
+              }}
+              modifiersClassNames={{
+                hasPost: "bg-indigo-100 text-indigo-900 font-bold border-b-2 border-indigo-600 rounded-none"
+              }}
+            />
+          </Card>
         </div>
 
         <div className="lg:col-span-2 space-y-12">
-          <div className="space-y-4">
-            <h2 className="text-xl font-headline font-bold flex items-center gap-2">Piano Editoriale (PED)</h2>
-            {isPostsLoading ? <Skeleton className="h-48" /> : posts && posts.length > 0 ? (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-headline font-bold flex items-center gap-2">
+                Piano Editoriale (PED)
+                {selectedDate && <span className="text-sm font-normal text-gray-400"> - {selectedDate.toLocaleDateString('it-IT')}</span>}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)} className="text-indigo-600">Vedi tutti</Button>
+            </div>
+
+            <div className="lg:hidden mb-4">
+              <Card className="p-4 border-gray-200/50">
+                 <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="rounded-md mx-auto"
+                />
+              </Card>
+            </div>
+
+            {isPostsLoading ? <Skeleton className="h-48" /> : postsOnSelectedDate.length > 0 ? (
               <div className="space-y-4">
-                {posts.map(post => (
+                {postsOnSelectedDate.map(post => (
                   <Card key={post.id} className="rounded-xl border-gray-200/50 shadow-sm transition-all hover:border-indigo-200">
                     <CardHeader className="pb-3 flex flex-row justify-between items-start space-y-0">
                       <div>
                         <CardTitle className="text-lg font-headline font-semibold">{post.titolo}</CardTitle>
-                        <CardDescription className="text-xs">Programmato per il {post.data_pubblicazione ? post.data_pubblicazione.toDate().toLocaleDateString() : 'Prossimamente'}</CardDescription>
+                        <CardDescription className="text-xs flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {post.data_pubblicazione ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
+                        </CardDescription>
                       </div>
                       <Badge className={`${STATO_POST_COLORS[post.stato as StatoPost].bg} ${STATO_POST_COLORS[post.stato as StatoPost].text} border-none font-medium text-[10px]`}>
                         {STATO_POST_LABELS[post.stato as StatoPost]}
@@ -202,7 +249,9 @@ export default function ClienteDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground italic text-sm">Nessun post programmato.</p>
+              <div className="text-center py-10 bg-gray-50/50 rounded-xl border-2 border-dashed">
+                <p className="text-muted-foreground text-sm">Nessun post programmato per questa data.</p>
+              </div>
             )}
           </div>
 
