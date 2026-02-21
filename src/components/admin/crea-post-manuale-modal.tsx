@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, FilePlus2, Calendar } from 'lucide-react';
 
@@ -45,9 +45,16 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
         aggiornato_il: serverTimestamp(),
       };
 
+      // 1. Crea il post nella sotto-collezione
       await addDoc(collection(db, 'clienti', clienteId, 'post'), postData);
 
-      toast({ title: 'Post creato!', description: 'La bozza è stata aggiunta al PED.' });
+      // 2. Incrementa il contatore post_usati nel documento cliente
+      const clientRef = doc(db, 'clienti', clienteId);
+      await updateDoc(clientRef, {
+        post_usati: increment(1)
+      });
+
+      toast({ title: 'Post creato!', description: 'La bozza è stata aggiunta al PED e i crediti aggiornati.' });
       setFormData({ titolo: '', testo: '', data_pubblicazione: '' });
       onClose();
     } catch (error) {

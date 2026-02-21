@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, Loader2, RotateCcw, Check } from 'lucide-react';
 import { generateSocialPost, GeneratePostOutput } from '@/ai/flows/generate-post-ai-flow';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const PIATTAFORME = [
@@ -71,6 +71,7 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
     if (!result) return;
     setLoading(true);
     try {
+      // 1. Crea il post
       await addDoc(collection(db, 'clienti', clienteId, 'post'), {
         titolo: result.titolo,
         testo: result.testo,
@@ -79,7 +80,14 @@ export function GeneraBozzaModal({ isOpen, onClose, clienteId, clienteNome, clie
         creato_il: serverTimestamp(),
         aggiornato_il: serverTimestamp()
       });
-      toast({ title: 'Bozza salvata!', description: 'Il post è stato aggiunto al calendario.' });
+
+      // 2. Incrementa crediti
+      const clientRef = doc(db, 'clienti', clienteId);
+      await updateDoc(clientRef, {
+        post_usati: increment(1)
+      });
+
+      toast({ title: 'Bozza salvata!', description: 'Il post è stato aggiunto al calendario e i crediti aggiornati.' });
       handleClose();
     } finally {
       setLoading(false);

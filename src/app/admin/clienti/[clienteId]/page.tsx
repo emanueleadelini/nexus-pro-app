@@ -4,13 +4,14 @@ import { useParams } from 'next/navigation';
 import { useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { collection, doc, query, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { StatoPost, STATO_POST_LABELS, STATO_POST_COLORS, Post } from '@/types/post';
-import { StatoValidazione, STATO_VALIDAZIONE_LABELS, STATO_VALIDAZIONE_COLORS, getFileTypeInfo, Material, DestinazioneAsset, DESTINAZIONE_LABELS, DESTINAZIONE_ICONS, TipoAsset } from '@/types/material';
+import { StatoValidazione, STATO_VALIDAZIONE_LABELS, STATO_VALIDAZIONE_COLORS, getFileTypeInfo, Material, DestinazioneAsset, DESTINAZIONE_LABELS, DESTINAZIONE_ICONS } from '@/types/material';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, User, UploadCloud, Edit3, Image as ImageIcon, Filter, CheckCircle2, XCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, User, UploadCloud, Edit3, Image as ImageIcon, Filter, CheckCircle2, XCircle, PieChart, Info } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
 import { CreaPostManualeModal } from '@/components/admin/crea-post-manuale-modal';
@@ -19,7 +20,6 @@ import { CaricaMaterialeModal } from '@/components/admin/carica-materiale-modal'
 import { Calendar } from '@/components/ui/calendar';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ClienteDettaglio() {
@@ -32,7 +32,6 @@ export default function ClienteDettaglio() {
   const [postDaModificare, setPostDaModificare] = useState<Post | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
-  // Filtri Asset
   const [tipoFilter, setTipoFilter] = useState<string>('all');
   const [destFilter, setDestFilter] = useState<string>('all');
 
@@ -75,7 +74,6 @@ export default function ClienteDettaglio() {
   if (isClientLoading) return <div className="space-y-4 p-8"><Skeleton className="h-12 w-1/3" /><Skeleton className="h-64" /></div>;
   if (!client) return <div className="p-8 text-center">Cliente non trovato.</div>;
 
-  // Logica di filtraggio Asset
   const filteredMaterials = materials?.filter(mat => {
     const typeInfo = getFileTypeInfo(mat.nome_file);
     const matchesTipo = tipoFilter === 'all' || typeInfo.type === tipoFilter;
@@ -101,6 +99,11 @@ export default function ClienteDettaglio() {
 
   const daysWithPosts = posts?.filter(p => p.data_pubblicazione && typeof p.data_pubblicazione.toDate === 'function').map(p => p.data_pubblicazione.toDate().toDateString()) || [];
 
+  const postTotali = client.post_totali || 0;
+  const postUsati = client.post_usati || 0;
+  const postRimanenti = Math.max(0, postTotali - postUsati);
+  const usagePercent = postTotali > 0 ? (postUsati / postTotali) * 100 : 0;
+
   return (
     <div className="space-y-8 p-4 md:p-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -121,199 +124,252 @@ export default function ClienteDettaglio() {
         </div>
       </div>
 
-      <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="bg-white border-b border-gray-200 p-0 h-12 w-full justify-start rounded-none mb-6">
-          <TabsTrigger value="calendar" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-8 text-sm font-medium">
-            <CalendarDays className="w-4 h-4 mr-2" /> Calendario Editoriale
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-8 text-sm font-medium">
-            <FolderOpen className="w-4 h-4 mr-2" /> Archivio Asset
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:col-span-3 space-y-8">
+          <Tabs defaultValue="calendar" className="w-full">
+            <TabsList className="bg-white border-b border-gray-200 p-0 h-12 w-full justify-start rounded-none mb-6">
+              <TabsTrigger value="calendar" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-8 text-sm font-medium">
+                <CalendarDays className="w-4 h-4 mr-2" /> Calendario Editoriale
+              </TabsTrigger>
+              <TabsTrigger value="materials" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-8 text-sm font-medium">
+                <FolderOpen className="w-4 h-4 mr-2" /> Archivio Asset
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="calendar" className="space-y-6">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <Card className="p-4 h-fit border-indigo-100 shadow-sm">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md"
-                modifiers={{
-                  hasPost: (date) => daysWithPosts.includes(date.toDateString())
-                }}
-                modifiersClassNames={{
-                  hasPost: "bg-indigo-100 text-indigo-900 font-bold border-b-2 border-indigo-600 rounded-none"
-                }}
-              />
-              <div className="mt-4 pt-4 border-t text-xs text-gray-500 flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-600 rounded-full" /> Giorni con post programmati
-              </div>
-            </Card>
+            <TabsContent value="calendar" className="space-y-6">
+              <div className="flex flex-col lg:flex-row gap-8">
+                <Card className="p-4 h-fit border-indigo-100 shadow-sm w-full lg:w-80">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    className="rounded-md"
+                    modifiers={{
+                      hasPost: (date) => daysWithPosts.includes(date.toDateString())
+                    }}
+                    modifiersClassNames={{
+                      hasPost: "bg-indigo-100 text-indigo-900 font-bold border-b-2 border-indigo-600 rounded-none"
+                    }}
+                  />
+                  <div className="mt-4 pt-4 border-t text-xs text-gray-500 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-indigo-600 rounded-full" /> Giorni con post programmati
+                  </div>
+                </Card>
 
-            <div className="flex-1 space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-headline font-bold">
-                  {selectedDate ? `Post per il ${selectedDate.toLocaleDateString('it-IT')}` : 'Tutti i post'}
-                </h2>
-                <Button size="sm" onClick={() => setIsManualeOpen(true)} className="bg-indigo-600"><Plus className="w-4 h-4 mr-2"/> Aggiungi Post</Button>
-              </div>
+                <div className="flex-1 space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-headline font-bold">
+                      {selectedDate ? `Post per il ${selectedDate.toLocaleDateString('it-IT')}` : 'Tutti i post'}
+                    </h2>
+                    <Button size="sm" onClick={() => setIsManualeOpen(true)} className="bg-indigo-600"><Plus className="w-4 h-4 mr-2"/> Aggiungi Post</Button>
+                  </div>
 
-              {isPostsLoading ? <Skeleton className="h-48" /> : postsOnSelectedDate.length > 0 ? (
-                <div className="grid gap-4">
-                  {postsOnSelectedDate.map(post => {
-                    const materialAssociato = materials?.find(m => m.id === post.materiale_id);
-                    return (
-                      <Card key={post.id} className="rounded-xl border-gray-200/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <div className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-headline font-semibold text-lg">{post.titolo}</h3>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => setPostDaModificare(post)}>
-                                  <Edit3 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                              <div className="flex items-center gap-4 mt-1">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-gray-400" />
-                                  <span className="text-xs text-gray-400">
-                                    {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
-                                  </span>
-                                </div>
-                                {materialAssociato && (
-                                  <div className="flex items-center gap-1 text-xs text-indigo-500 font-medium">
-                                    <ImageIcon className="w-3 h-3" /> Asset: {materialAssociato.nome_file}
+                  {isPostsLoading ? <Skeleton className="h-48" /> : postsOnSelectedDate.length > 0 ? (
+                    <div className="grid gap-4">
+                      {postsOnSelectedDate.map(post => {
+                        const materialAssociato = materials?.find(m => m.id === post.materiale_id);
+                        return (
+                          <Card key={post.id} className="rounded-xl border-gray-200/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <div className="flex items-center gap-3">
+                                    <h3 className="font-headline font-semibold text-lg">{post.titolo}</h3>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => setPostDaModificare(post)}>
+                                      <Edit3 className="w-4 h-4" />
+                                    </Button>
                                   </div>
-                                )}
+                                  <div className="flex items-center gap-4 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-gray-400" />
+                                      <span className="text-xs text-gray-400">
+                                        {post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' ? post.data_pubblicazione.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Orario non pianificato'}
+                                      </span>
+                                    </div>
+                                    {materialAssociato && (
+                                      <div className="flex items-center gap-1 text-xs text-indigo-500 font-medium">
+                                        <ImageIcon className="w-3 h-3" /> Asset: {materialAssociato.nome_file}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <Badge className={`${STATO_POST_COLORS[post.stato as StatoPost].bg} ${STATO_POST_COLORS[post.stato as StatoPost].text} border-none font-medium`}>
+                                  {STATO_POST_LABELS[post.stato as StatoPost]}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600 italic border-l-2 border-indigo-100 pl-4 bg-indigo-50/30 p-2 rounded-r">
+                                "{post.testo}"
+                              </p>
+                            </div>
+                            <CardFooter className="bg-gray-50/50 p-4 border-t border-gray-100 flex justify-end gap-2">
+                              {post.stato === 'bozza' && (
+                                <Button size="sm" onClick={() => updatePostState(post.id, 'da_approvare')} className="bg-orange-600 hover:bg-orange-700">
+                                  <Send className="w-3 h-3 mr-2" /> Invia per approvazione
+                                </Button>
+                              )}
+                              {post.stato === 'da_approvare' && (
+                                <Button size="sm" onClick={() => updatePostState(post.id, 'approvato')} className="bg-blue-600 hover:bg-blue-700">Approva</Button>
+                              )}
+                              {post.stato === 'approvato' && (
+                                <Button size="sm" onClick={() => updatePostState(post.id, 'pubblicato')} className="bg-green-600 hover:bg-green-700">Segna pubblicato</Button>
+                              )}
+                            </CardFooter>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-100">
+                      <CalendarDays className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">Nessun post programmato per questa data.</p>
+                      <Button variant="link" onClick={() => setSelectedDate(undefined)} className="text-indigo-600 mt-2">Mostra tutti i post</Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="materials" className="space-y-6">
+              <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-bold text-gray-500 uppercase tracking-tight">Filtra per:</span>
+                </div>
+                
+                <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                  <SelectTrigger className="w-[180px] bg-white">
+                    <SelectValue placeholder="Tipologia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti i tipi</SelectItem>
+                    <SelectItem value="grafica">🎨 Grafiche</SelectItem>
+                    <SelectItem value="foto">📸 Foto</SelectItem>
+                    <SelectItem value="video">🎥 Video</SelectItem>
+                    <SelectItem value="documento">📄 Documenti</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={destFilter} onValueChange={setDestFilter}>
+                  <SelectTrigger className="w-[180px] bg-white">
+                    <SelectValue placeholder="Destinazione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutte le destinazioni</SelectItem>
+                    <SelectItem value="social">📱 Social Media</SelectItem>
+                    <SelectItem value="sito">🌐 Sito Web</SelectItem>
+                    <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button variant="ghost" size="sm" onClick={() => {setTipoFilter('all'); setDestFilter('all');}} className="text-xs text-gray-400 hover:text-indigo-600">
+                  Reset Filtri
+                </Button>
+              </div>
+
+              {isMaterialsLoading ? <Skeleton className="h-64" /> : Object.keys(groupedMaterials).length > 0 ? (
+                Object.keys(groupedMaterials).map(date => (
+                  <div key={date} className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest bg-white px-4 py-1 rounded-full border shadow-sm">{date}</h3>
+                      <div className="h-px bg-gray-100 flex-1" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {groupedMaterials[date].map((mat: Material) => {
+                        const typeInfo = getFileTypeInfo(mat.nome_file);
+                        const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
+                        return (
+                          <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm overflow-hidden flex flex-col hover:border-indigo-300 transition-colors">
+                            <div className="p-4 flex-1">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className={`p-3 ${typeInfo.bg} rounded-xl`}>
+                                  <typeInfo.icon className={`w-6 h-6 ${typeInfo.color}`} />
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <Badge variant="outline" className="text-[9px] font-bold uppercase py-0 px-2 flex gap-1 items-center bg-gray-50">
+                                    <DestIcon className="w-2 h-2" /> {DESTINAZIONE_LABELS[mat.destinazione]}
+                                  </Badge>
+                                  <MaterialeStatoChip stato={mat.stato_validazione} />
+                                </div>
+                              </div>
+                              <p className="font-semibold text-sm truncate" title={mat.nome_file}>{mat.nome_file}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <User className="w-3 h-3 text-indigo-500" />
+                                <span className="text-[10px] text-gray-400 font-medium">UID: {mat.caricato_da?.substring(0, 8)}...</span>
                               </div>
                             </div>
-                            <Badge className={`${STATO_POST_COLORS[post.stato as StatoPost].bg} ${STATO_POST_COLORS[post.stato as StatoPost].text} border-none font-medium`}>
-                              {STATO_POST_LABELS[post.stato as StatoPost]}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600 italic border-l-2 border-indigo-100 pl-4 bg-indigo-50/30 p-2 rounded-r">
-                            "{post.testo}"
-                          </p>
-                        </div>
-                        <CardFooter className="bg-gray-50/50 p-4 border-t border-gray-100 flex justify-end gap-2">
-                          {post.stato === 'bozza' && (
-                            <Button size="sm" onClick={() => updatePostState(post.id, 'da_approvare')} className="bg-orange-600 hover:bg-orange-700">
-                              <Send className="w-3 h-3 mr-2" /> Invia per approvazione
-                            </Button>
-                          )}
-                          {post.stato === 'da_approvare' && (
-                            <Button size="sm" onClick={() => updatePostState(post.id, 'approvato')} className="bg-blue-600 hover:bg-blue-700">Approva</Button>
-                          )}
-                          {post.stato === 'approvato' && (
-                            <Button size="sm" onClick={() => updatePostState(post.id, 'pubblicato')} className="bg-green-600 hover:bg-green-700">Segna pubblicato</Button>
-                          )}
-                        </CardFooter>
-                      </Card>
-                    );
-                  })}
-                </div>
+                            {mat.stato_validazione === 'in_attesa' && (
+                              <div className="p-3 bg-gray-50 border-t flex gap-2">
+                                <Button size="sm" variant="outline" className="flex-1 text-red-600 border-red-100" onClick={() => validateMaterial(mat.id, 'rifiutato')}>Rifiuta</Button>
+                                <Button size="sm" className="flex-1 bg-green-600" onClick={() => validateMaterial(mat.id, 'validato')}>Valida</Button>
+                              </div>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
               ) : (
                 <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-100">
-                  <CalendarDays className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                  <p className="text-muted-foreground text-sm">Nessun post programmato per questa data.</p>
-                  <Button variant="link" onClick={() => setSelectedDate(undefined)} className="text-indigo-600 mt-2">Mostra tutti i post</Button>
+                  <FolderOpen className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                  <p className="text-muted-foreground">Nessun asset trovato con i filtri selezionati.</p>
+                  <Button variant="link" onClick={() => {setTipoFilter('all'); setDestFilter('all');}} className="text-indigo-600 mt-2">Pulisci i filtri</Button>
                 </div>
               )}
-            </div>
-          </div>
-        </TabsContent>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-        <TabsContent value="materials" className="space-y-6">
-          {/* Submenu Filtri Asset */}
-          <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-bold text-gray-500 uppercase tracking-tight">Filtra per:</span>
-            </div>
-            
-            <Select value={tipoFilter} onValueChange={setTipoFilter}>
-              <SelectTrigger className="w-[180px] bg-white">
-                <SelectValue placeholder="Tipologia" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti i tipi</SelectItem>
-                <SelectItem value="grafica">🎨 Grafiche</SelectItem>
-                <SelectItem value="foto">📸 Foto</SelectItem>
-                <SelectItem value="video">🎥 Video</SelectItem>
-                <SelectItem value="documento">📄 Documenti</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={destFilter} onValueChange={setDestFilter}>
-              <SelectTrigger className="w-[180px] bg-white">
-                <SelectValue placeholder="Destinazione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutte le destinazioni</SelectItem>
-                <SelectItem value="social">📱 Social Media</SelectItem>
-                <SelectItem value="sito">🌐 Sito Web</SelectItem>
-                <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="ghost" size="sm" onClick={() => {setTipoFilter('all'); setDestFilter('all');}} className="text-xs text-gray-400 hover:text-indigo-600">
-              Reset Filtri
-            </Button>
-          </div>
-
-          {isMaterialsLoading ? <Skeleton className="h-64" /> : Object.keys(groupedMaterials).length > 0 ? (
-            Object.keys(groupedMaterials).map(date => (
-              <div key={date} className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest bg-white px-4 py-1 rounded-full border shadow-sm">{date}</h3>
-                  <div className="h-px bg-gray-100 flex-1" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {groupedMaterials[date].map((mat: Material) => {
-                    const typeInfo = getFileTypeInfo(mat.nome_file);
-                    const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
-                    return (
-                      <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm overflow-hidden flex flex-col hover:border-indigo-300 transition-colors">
-                        <div className="p-4 flex-1">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className={`p-3 ${typeInfo.bg} rounded-xl`}>
-                              <typeInfo.icon className={`w-6 h-6 ${typeInfo.color}`} />
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <Badge variant="outline" className="text-[9px] font-bold uppercase py-0 px-2 flex gap-1 items-center bg-gray-50">
-                                <DestIcon className="w-2 h-2" /> {DESTINAZIONE_LABELS[mat.destinazione]}
-                              </Badge>
-                              <MaterialeStatoChip stato={mat.stato_validazione} />
-                            </div>
-                          </div>
-                          <p className="font-semibold text-sm truncate" title={mat.nome_file}>{mat.nome_file}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <User className="w-3 h-3 text-indigo-500" />
-                            <span className="text-[10px] text-gray-400 font-medium">UID: {mat.caricato_da?.substring(0, 8)}...</span>
-                          </div>
-                        </div>
-                        {mat.stato_validazione === 'in_attesa' && (
-                          <div className="p-3 bg-gray-50 border-t flex gap-2">
-                            <Button size="sm" variant="outline" className="flex-1 text-red-600 border-red-100" onClick={() => validateMaterial(mat.id, 'rifiutato')}>Rifiuta</Button>
-                            <Button size="sm" className="flex-1 bg-green-600" onClick={() => validateMaterial(mat.id, 'validato')}>Valida</Button>
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
+        {/* Sidebar con Crediti & Stato */}
+        <div className="space-y-6">
+          <Card className="rounded-xl border-gray-200/50 shadow-md overflow-hidden sticky top-24">
+            <CardHeader className="bg-indigo-600 text-white pb-6">
+              <CardTitle className="text-lg font-headline flex items-center gap-2">
+                <PieChart className="w-5 h-5" /> Crediti Piano
+              </CardTitle>
+              <CardDescription className="text-indigo-100 text-xs">
+                Monitoraggio abbonamento cliente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="flex flex-col items-center justify-center py-4 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Post Rimanenti</span>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-5xl font-bold font-headline ${postRimanenti <= 1 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {postRimanenti}
+                  </span>
+                  <span className="text-gray-400 font-medium">/ {postTotali}</span>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-100">
-              <FolderOpen className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-              <p className="text-muted-foreground">Nessun asset trovato con i filtri selezionati.</p>
-              <Button variant="link" onClick={() => {setTipoFilter('all'); setDestFilter('all');}} className="text-indigo-600 mt-2">Pulisci i filtri</Button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-tighter">
+                  <span className="text-gray-400">Utilizzo Crediti</span>
+                  <span className={usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}>
+                    {Math.round(usagePercent)}%
+                  </span>
+                </div>
+                <Progress 
+                  value={usagePercent} 
+                  className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} 
+                />
+              </div>
+
+              <div className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 flex gap-3 items-start">
+                <Info className="w-4 h-4 text-indigo-500 mt-0.5" />
+                <p className="text-[10px] text-indigo-700 leading-relaxed">
+                  I crediti vengono scalati automaticamente ogni volta che crei un nuovo post per il cliente.
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter className="border-t bg-gray-50/50 p-4">
+               <Button variant="outline" className="w-full text-xs font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50">
+                 Modifica Piano Abbonamento
+               </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
 
       <GeneraBozzaModal isOpen={isGeneraOpen} onClose={() => setIsGeneraOpen(false)} clienteId={clienteId} clienteNome={client.nome_azienda} clienteSettore={client.settore || ''} />
       <CreaPostManualeModal isOpen={isManualeOpen} onClose={() => setIsManualeOpen(false)} clienteId={clienteId} />

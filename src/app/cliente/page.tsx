@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { CalendarCheck, Upload, ArrowUpRight, Check, Loader2, User, UploadCloud, X, FileIcon, CalendarDays, Clock, Filter, Share2, Globe, Printer } from 'lucide-react';
+import { CalendarCheck, Upload, ArrowUpRight, Check, Loader2, User, UploadCloud, X, FileIcon, CalendarDays, Clock, Filter, Share2, Globe, Printer, PieChart, Info } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -98,7 +98,10 @@ export default function ClienteDashboard() {
   if (isClientLoading || !clienteId) return <div className="space-y-6 p-8"><Skeleton className="h-32 w-full" /><Skeleton className="h-64" /></div>;
   if (!client) return <div className="p-8">Errore caricamento dati cliente.</div>;
 
-  const usagePercent = client.post_totali > 0 ? (client.post_usati / client.post_totali) * 100 : 0;
+  const postTotali = client.post_totali || 0;
+  const postUsati = client.post_usati || 0;
+  const postRimanenti = Math.max(0, postTotali - postUsati);
+  const usagePercent = postTotali > 0 ? (postUsati / postTotali) * 100 : 0;
 
   const postsOnSelectedDate = posts?.filter((post: any) => {
     if (!post.data_pubblicazione || !selectedDate || typeof post.data_pubblicazione.toDate !== 'function') return false;
@@ -108,7 +111,6 @@ export default function ClienteDashboard() {
 
   const daysWithPosts = posts?.filter((p: any) => p.data_pubblicazione && typeof p.data_pubblicazione.toDate === 'function').map((p: any) => p.data_pubblicazione.toDate().toDateString()) || [];
 
-  // Logica di filtraggio Asset
   const filteredMaterials = materials?.filter(mat => {
     const typeInfo = getFileTypeInfo(mat.nome_file);
     const matchesTipo = tipoFilter === 'all' || typeInfo.type === tipoFilter;
@@ -197,16 +199,46 @@ export default function ClienteDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="space-y-6">
           <Card className="rounded-xl border-gray-200/50 shadow-md overflow-hidden">
-            <CardHeader className="bg-indigo-600 text-white">
-              <CardTitle className="text-xl font-headline flex items-center gap-2">Crediti Post</CardTitle>
+            <CardHeader className="bg-indigo-600 text-white pb-6">
+              <CardTitle className="text-xl font-headline flex items-center gap-2">
+                <PieChart className="w-5 h-5" /> Stato Account
+              </CardTitle>
+              <CardDescription className="text-indigo-100 text-xs">
+                Contatore crediti Piano Editoriale
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                 <span className="text-sm font-medium text-gray-500">Post Rimanenti</span>
-                 <span className="text-3xl font-bold text-gray-900">{client.post_totali - client.post_usati} / {client.post_totali}</span>
+            <CardContent className="pt-6 space-y-6">
+              <div className="flex flex-col items-center justify-center py-4 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Post Rimanenti nel Mese</span>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-5xl font-bold font-headline ${postRimanenti <= 1 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {postRimanenti}
+                  </span>
+                  <span className="text-gray-400 font-medium">/ {postTotali}</span>
+                </div>
               </div>
-              <Progress value={usagePercent} className={`h-3 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} />
-              <Button variant="link" className="w-full text-indigo-600 p-0 flex items-center justify-center gap-1">
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-tighter">
+                  <span className="text-gray-400">Post Utilizzati</span>
+                  <span className={usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}>
+                    {postUsati} / {postTotali}
+                  </span>
+                </div>
+                <Progress 
+                  value={usagePercent} 
+                  className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} 
+                />
+              </div>
+
+              <div className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 flex gap-3 items-start">
+                <Info className="w-4 h-4 text-indigo-500 mt-0.5" />
+                <p className="text-[10px] text-indigo-700 leading-relaxed">
+                  I crediti si riferiscono al numero di post pianificati dall'agenzia nel calendario editoriale. Quando arrivi a zero, contatta il tuo referente.
+                </p>
+              </div>
+
+              <Button variant="link" className="w-full text-indigo-600 p-0 flex items-center justify-center gap-1 font-bold">
                 Richiedi Post Extra <ArrowUpRight className="w-4 h-4" />
               </Button>
             </CardContent>
@@ -288,8 +320,6 @@ export default function ClienteDashboard() {
 
           <div className="space-y-6">
             <h2 className="text-xl font-headline font-bold flex items-center gap-2">Archivio Asset</h2>
-            
-            {/* Submenu Filtri Cliente */}
             <div className="flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-gray-400" />
