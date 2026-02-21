@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-agency",
+      "description": "Professional agency workspace",
+      "imageUrl": "https://picsum.photos/seed/agency1/1200/600",
+      "imageHint": "modern office workspace"
+    },
+    {
+      "id": "client-avatar-1",
+      "description": "Client profile 1",
+      "imageUrl": "https://picsum.photos/seed/client1/100/100",
+      "imageHint": "company logo"
+    },
+    {
+      "id": "client-avatar-2",
+      "description": "Client profile 2",
+      "imageUrl": "https://picsum.photos/seed/client2/100/100",
+      "imageHint": "modern business logo"
+    }
+  ]
+}
