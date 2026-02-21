@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, User, UploadCloud, Edit3, Image as ImageIcon, Filter, CheckCircle2, XCircle, PieChart, Info, AlertTriangle } from 'lucide-react';
+import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, UploadCloud, Edit3, Image as ImageIcon, Filter, PieChart, Info, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
 import { CreaPostManualeModal } from '@/components/admin/crea-post-manuale-modal';
@@ -68,7 +68,8 @@ export default function ClienteDettaglio() {
     }
     updateDoc(ref, { 
       stato_validazione: status, 
-      note_rifiuto: notes 
+      note_rifiuto: notes,
+      aggiornato_il: serverTimestamp()
     });
     toast({ title: "Materiale aggiornato", description: `Stato: ${status}` });
   };
@@ -291,6 +292,8 @@ export default function ClienteDettaglio() {
                       {groupedMaterials[date].map((mat: Material) => {
                         const typeInfo = getFileTypeInfo(mat.nome_file);
                         const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
+                        const timeStr = mat.creato_il && typeof mat.creato_il.toDate === 'function' ? mat.creato_il.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+
                         return (
                           <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm overflow-hidden flex flex-col hover:border-indigo-300 transition-colors">
                             <div className="p-4 flex-1">
@@ -305,7 +308,8 @@ export default function ClienteDettaglio() {
                                   <MaterialeStatoChip stato={mat.stato_validazione} />
                                 </div>
                               </div>
-                              <p className="font-semibold text-sm truncate" title={mat.nome_file}>{mat.nome_file}</p>
+                              <p className="font-semibold text-sm truncate mb-1" title={mat.nome_file}>{mat.nome_file}</p>
+                              {timeStr && <p className="text-[10px] text-gray-400 flex items-center gap-1"><Clock className="w-2 h-2"/> Caricato alle {timeStr}</p>}
                             </div>
                             {mat.stato_validazione === 'in_attesa' && (
                               <div className="p-3 bg-gray-50 border-t flex gap-2">

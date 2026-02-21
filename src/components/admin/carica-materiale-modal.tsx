@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UploadCloud, FileIcon, X, Share2, Globe, Printer } from 'lucide-react';
+import { Loader2, UploadCloud, FileIcon, X } from 'lucide-react';
 import { DestinazioneAsset } from '@/types/material';
 
 interface Props {
@@ -41,6 +41,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
 
     setLoading(true);
     try {
+      // La data (creato_il) viene inserita automaticamente dal server
       await addDoc(collection(db, 'clienti', clienteId, 'materiali'), {
         nome_file: selectedFile.name,
         url_storage: null,
@@ -48,10 +49,10 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
         destinazione: destinazione,
         stato_validazione: 'validato',
         note_rifiuto: null,
-        creato_il: serverTimestamp()
+        creato_il: serverTimestamp() 
       });
 
-      toast({ title: 'Materiale caricato!', description: `Il file ${selectedFile.name} è stato aggiunto correttamente.` });
+      toast({ title: 'Materiale caricato!', description: `Il file ${selectedFile.name} è stato aggiunto all'archivio.` });
       resetForm();
       onClose();
     } catch (error) {
@@ -71,13 +72,13 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetForm(); onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">Carica Asset</DialogTitle>
-          <DialogDescription>Seleziona un file e specifica la sua destinazione d'uso.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">Carica nuovo Asset</DialogTitle>
+          <DialogDescription>Seleziona il file. La data di caricamento verrà registrata automaticamente.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSave} className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label>Seleziona File</Label>
+            <Label>Seleziona File dal dispositivo</Label>
             <div 
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${selectedFile ? 'border-indigo-400 bg-indigo-50/50' : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}`}
@@ -94,7 +95,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
               ) : (
                 <>
                   <UploadCloud className="w-10 h-10 text-gray-300" />
-                  <p className="text-sm font-medium text-gray-600">Clicca per sfogliare</p>
+                  <p className="text-sm font-medium text-gray-600">Clicca per selezionare il file</p>
                 </>
               )}
             </div>
@@ -117,7 +118,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
           <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>Annulla</Button>
             <Button type="submit" disabled={loading || !selectedFile} className="bg-indigo-600 hover:bg-indigo-700">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Carica Ora'}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Carica in Archivio'}
             </Button>
           </DialogFooter>
         </form>

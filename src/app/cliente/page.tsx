@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { CalendarCheck, Upload, ArrowUpRight, Check, Loader2, User, UploadCloud, X, FileIcon, CalendarDays, Clock, Filter, Share2, Globe, Printer, PieChart, Info, Send } from 'lucide-react';
+import { Upload, ArrowUpRight, Check, Loader2, UploadCloud, X, FileIcon, CalendarDays, Clock, Filter, PieChart, Info, Send } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -18,7 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ClienteDashboard() {
-  const { user } = useUser();
+  const { user } = userUser();
   const db = useFirestore();
   const { toast } = useToast();
   const [clienteId, setClienteId] = useState<string | null>(null);
@@ -74,6 +74,7 @@ export default function ClienteDashboard() {
     if (!clienteId || !selectedFile || !user) return;
     setIsUploading(true);
     try {
+      // La data viene inserita automaticamente tramite serverTimestamp()
       await addDoc(collection(db, 'clienti', clienteId, 'materiali'), {
         nome_file: selectedFile.name,
         url_storage: null,
@@ -84,7 +85,7 @@ export default function ClienteDashboard() {
         creato_il: serverTimestamp()
       });
       resetUploadForm();
-      toast({ title: "Materiale inviato!", description: "Il team Nexus lo validerà a breve." });
+      toast({ title: "Materiale inviato!", description: "Il team Nexus lo validerà a breve. La data è stata registrata." });
     } finally {
       setIsUploading(false);
     }
@@ -157,13 +158,13 @@ export default function ClienteDashboard() {
         <Dialog onOpenChange={(open) => { if (!open) resetUploadForm(); }}>
           <DialogTrigger asChild>
             <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-md gap-2 w-full md:w-auto h-12">
-              <Upload className="w-4 h-4" /> Invia Asset
+              <Upload className="w-4 h-4" /> Invia nuovo Asset
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Invia materiale all'agenzia</DialogTitle>
-              <DialogDescription>Seleziona il file e la destinazione d'uso.</DialogDescription>
+              <DialogDescription>La data di invio verrà registrata automaticamente dal sistema.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
               <div className="space-y-2">
@@ -185,7 +186,7 @@ export default function ClienteDashboard() {
                     <>
                       <UploadCloud className="w-10 h-10 text-gray-300" />
                       <div className="text-center">
-                        <p className="text-sm font-medium text-gray-600">Seleziona o trascina un file</p>
+                        <p className="text-sm font-medium text-gray-600">Seleziona un file per l'invio</p>
                       </div>
                     </>
                   )}
@@ -193,7 +194,7 @@ export default function ClienteDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label>Destinazione d'uso</Label>
+                <Label>Destinazione d'uso prevista</Label>
                 <Select value={destinazione} onValueChange={(val: DestinazioneAsset) => setDestinazione(val)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Seleziona destinazione" />
@@ -208,7 +209,7 @@ export default function ClienteDashboard() {
             </div>
             <DialogFooter>
               <Button onClick={handleUpload} disabled={!selectedFile || isUploading} className="w-full bg-indigo-600 h-11">
-                {isUploading ? <Loader2 className="animate-spin" /> : 'Invia ora'}
+                {isUploading ? <Loader2 className="animate-spin" /> : 'Invia Materiale'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -393,6 +394,8 @@ export default function ClienteDashboard() {
                     {groupedMaterials[date].map((mat: Material) => {
                       const typeInfo = getFileTypeInfo(mat.nome_file);
                       const DestIcon = DESTINAZIONE_ICONS[mat.destinazione] || FolderOpen;
+                      const timeStr = mat.creato_il && typeof mat.creato_il.toDate === 'function' ? mat.creato_il.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '';
+                      
                       return (
                         <Card key={mat.id} className="rounded-xl border-gray-200/50 shadow-sm hover:border-indigo-200 transition-colors">
                           <CardContent className="p-4">
@@ -407,7 +410,8 @@ export default function ClienteDashboard() {
                                 </Badge>
                               </div>
                             </div>
-                            <p className="font-semibold text-sm truncate" title={mat.nome_file}>{mat.nome_file}</p>
+                            <p className="font-semibold text-sm truncate mb-1" title={mat.nome_file}>{mat.nome_file}</p>
+                            {timeStr && <p className="text-[9px] text-gray-400 flex items-center gap-1"><Clock className="w-2 h-2"/> Inviato alle {timeStr}</p>}
                           </CardContent>
                         </Card>
                       );
@@ -425,4 +429,9 @@ export default function ClienteDashboard() {
       </div>
     </div>
   );
+}
+
+function userUser() {
+  const { user, isUserLoading, userError } = useFirebase();
+  return { user, isUserLoading, userError };
 }
