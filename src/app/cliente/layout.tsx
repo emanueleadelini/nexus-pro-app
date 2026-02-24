@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -25,9 +26,14 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
 
     const checkRole = async () => {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists() && userDoc.data().ruolo === 'cliente') {
-        setIsAuthorized(true);
-        setNomeAzienda(userDoc.data().nomeAzienda || 'La tua Azienda');
+      if (userDoc.exists()) {
+        const ruolo = userDoc.data().ruolo;
+        if (ruolo === 'referente' || ruolo === 'collaboratore' || ruolo === 'cliente') {
+          setIsAuthorized(true);
+          setNomeAzienda(userDoc.data().nomeAzienda || 'La tua Azienda');
+        } else {
+          router.push('/login');
+        }
       } else {
         router.push('/login');
       }

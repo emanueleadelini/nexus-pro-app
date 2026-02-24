@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +11,7 @@ import { ShieldCheck, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { PERMESSI_DEFAULT } from '@/types/user';
 
 export default function SetupAdminPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -55,16 +57,16 @@ export default function SetupAdminPage() {
         const docRef = doc(db, 'users', user.uid);
         const adminData = {
           email: user.email,
-          ruolo: 'admin',
+          ruolo: 'super_admin', // Aggiornato per lo Sprint 1C
           nomeAzienda: 'AD next lab',
+          permessi: PERMESSI_DEFAULT['super_admin'],
           creatoIl: serverTimestamp()
         };
 
-        // Mutation non-blocking seguendo le linee guida: no await, catch per errore contestuale
         setDoc(docRef, adminData)
           .then(() => {
             setStatus('success');
-            setMessage('Configurazione completata! L\'account ' + user.email + ' è ora Amministratore.');
+            setMessage('Configurazione completata! L\'account ' + user.email + ' è ora Super Admin.');
           })
           .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
@@ -72,10 +74,7 @@ export default function SetupAdminPage() {
               operation: 'create',
               requestResourceData: adminData,
             });
-
-            // Emette l'errore per il listener globale (Next.js overlay in dev)
             errorEmitter.emit('permission-error', permissionError);
-            
             setStatus('error');
             setMessage("Errore di permessi Firestore. Le regole sono state aggiornate, attendi qualche secondo e riprova.");
           });
@@ -95,9 +94,9 @@ export default function SetupAdminPage() {
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-headline font-bold">Configurazione Admin</CardTitle>
+          <CardTitle className="text-2xl font-headline font-bold">Configurazione Super Admin</CardTitle>
           <CardDescription>
-            Imposta <strong>emanueleadelini@gmail.com</strong> come amministratore per AD next lab.
+            Imposta <strong>emanueleadelini@gmail.com</strong> come Super Admin per AD next lab.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

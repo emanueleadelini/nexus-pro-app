@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -34,10 +35,10 @@ export default function LoginPage() {
         const userData = userDoc.data();
         const role = userData.ruolo;
 
-        if (role === 'admin') {
-          toast({ title: "Bentornato Admin", description: "Accesso all'area gestionale effettuato." });
+        if (role === 'super_admin' || role === 'operatore' || role === 'admin') {
+          toast({ title: "Bentornato in Agenzia", description: "Accesso all'area gestionale effettuato." });
           router.push('/admin');
-        } else if (role === 'cliente') {
+        } else if (role === 'referente' || role === 'collaboratore' || role === 'cliente') {
           toast({ title: "Area Cliente", description: `Benvenuto, ${userData.nomeAzienda || 'Cliente'}` });
           router.push('/cliente');
         } else {
@@ -68,9 +69,6 @@ export default function LoginPage() {
           break;
         case 'auth/too-many-requests':
           message = "Troppi tentativi. Riprova tra qualche minuto.";
-          break;
-        case 'auth/network-request-failed':
-          message = "Errore di rete. Controlla la connessione.";
           break;
       }
       

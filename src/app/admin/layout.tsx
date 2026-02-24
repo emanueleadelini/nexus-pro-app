@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -18,19 +19,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (isUserLoading) return;
     
-    // Se non c'è sessione, manda al login
     if (!user) {
       router.push('/login');
       return;
     }
 
-    // Verifica ruolo admin
     const checkAdmin = async () => {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists() && userDoc.data().ruolo === 'admin') {
-        setIsAuthorized(true);
+      if (userDoc.exists()) {
+        const ruolo = userDoc.data().ruolo;
+        if (ruolo === 'super_admin' || ruolo === 'operatore') {
+          setIsAuthorized(true);
+        } else {
+          router.push('/login');
+        }
       } else {
-        // Se non è admin, lo rispedisce al login (o all'area cliente se lo è)
         router.push('/login');
       }
     };
@@ -42,14 +45,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin text-indigo-600 w-12 h-12 mb-4" />
-        <p className="text-gray-500 font-medium animate-pulse text-sm">Verifica autorizzazioni admin...</p>
+        <p className="text-gray-500 font-medium animate-pulse text-sm">Verifica autorizzazioni agenzia...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Desktop */}
       <aside className="hidden md:flex w-64 flex-col bg-white border-r border-gray-200/60 sticky top-0 h-screen">
         <div className="p-6 flex items-center gap-3 border-b border-gray-100">
           <div className="bg-indigo-600 p-2 rounded-lg">
@@ -80,9 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
         <header className="md:hidden bg-white border-b p-4 flex justify-between items-center shadow-sm">
           <h1 className="font-headline font-bold text-indigo-600 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5" /> AD next lab
@@ -98,7 +98,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         <nav className="md:hidden bg-white border-t border-gray-100 p-2 flex justify-around sticky bottom-0 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <Link href="/admin" className="p-3 text-indigo-600 flex flex-col items-center">
             <Users className="w-6 h-6" />

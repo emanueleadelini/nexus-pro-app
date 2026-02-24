@@ -7,10 +7,6 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
-/**
- * Pagina di ingresso centrale che gestisce il redirect automatico
- * in base alla sessione e al ruolo dell'utente.
- */
 export default function RootPage() {
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
@@ -29,9 +25,11 @@ export default function RootPage() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          if (data.ruolo === 'admin') {
+          const ruolo = data.ruolo;
+          
+          if (ruolo === 'super_admin' || ruolo === 'operatore' || ruolo === 'admin') {
             router.push('/admin');
-          } else if (data.ruolo === 'cliente') {
+          } else if (ruolo === 'referente' || ruolo === 'collaboratore' || ruolo === 'cliente') {
             router.push('/cliente');
           } else {
             router.push('/login');
@@ -40,7 +38,6 @@ export default function RootPage() {
           router.push('/login');
         }
       } catch (error) {
-        console.error("Errore nel recupero del profilo:", error);
         router.push('/login');
       }
     };
