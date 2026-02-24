@@ -3,12 +3,12 @@
     "UserProfile": {
       "title": "UserProfile",
       "type": "object",
-      "description": "Profilo utente avanzato con RBAC a 4 livelli per AD next lab.",
+      "description": "Profilo utente con RBAC a 4 livelli per AD next lab.",
       "properties": {
         "id": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "ruolo": { "type": "string", "enum": ["super_admin", "operatore", "referente", "collaboratore"] },
-        "cliente_id": { "type": "string", "description": "ID del cliente associato (per ruoli cliente)" },
+        "cliente_id": { "type": "string" },
         "nomeAzienda": { "type": "string" },
         "permessi": { "type": "array", "items": { "type": "string" } },
         "creatoIl": { "type": "string", "format": "date-time" }
@@ -18,23 +18,21 @@
     "Client": {
       "title": "Client",
       "type": "object",
-      "description": "Azienda cliente con gestione crediti e stato upgrade.",
+      "description": "Azienda cliente con gestione crediti.",
       "properties": {
         "id": { "type": "string" },
         "nome_azienda": { "type": "string" },
         "settore": { "type": "string" },
-        "email_riferimento": { "type": "string" },
         "post_totali": { "type": "number" },
         "post_usati": { "type": "number" },
-        "richiesta_upgrade": { "type": "boolean" },
-        "creato_il": { "type": "string", "format": "date-time" }
+        "richiesta_upgrade": { "type": "boolean" }
       },
-      "required": ["id", "nome_azienda", "post_totali", "post_usati"]
+      "required": ["id", "nome_azienda", "post_totali"]
     },
     "Post": {
       "title": "Post",
       "type": "object",
-      "description": "Post strategico con workflow a 7 stati e versioning.",
+      "description": "Post social con workflow a 7 stati e versioning.",
       "properties": {
         "id": { "type": "string" },
         "titolo": { "type": "string" },
@@ -42,44 +40,21 @@
         "stato": { "type": "string", "enum": ["bozza", "revisione_interna", "da_approvare", "revisione", "approvato", "programmato", "pubblicato"] },
         "piattaforma": { "type": "string" },
         "formato": { "type": "string" },
-        "materiale_id": { "type": "string" },
-        "data_pubblicazione": { "type": "string", "format": "date-time" },
         "versione_corrente": { "type": "number" },
-        "storico_stati": { "type": "array" },
-        "versioni": { "type": "array" },
-        "creato_il": { "type": "string", "format": "date-time" },
-        "aggiornato_il": { "type": "string", "format": "date-time" }
+        "versioni": { "type": "array" }
       },
-      "required": ["id", "titolo", "testo", "stato", "piattaforma", "formato"]
-    },
-    "Material": {
-      "title": "Material",
-      "type": "object",
-      "description": "Asset multimediale con limite 50MB e supporto link esterni.",
-      "properties": {
-        "id": { "type": "string" },
-        "nome_file": { "type": "string" },
-        "url_storage": { "type": "string" },
-        "link_esterno": { "type": "string" },
-        "caricato_da": { "type": "string" },
-        "ruolo_caricatore": { "type": "string", "enum": ["admin", "cliente"] },
-        "stato_validazione": { "type": "string", "enum": ["in_attesa", "validato", "rifiutato"] },
-        "destinazione": { "type": "string", "enum": ["social", "sito", "offline"] },
-        "creato_il": { "type": "string", "format": "date-time" }
-      }
+      "required": ["id", "titolo", "testo", "stato"]
     },
     "Notifica": {
       "title": "Notifica",
       "type": "object",
-      "description": "Notifica di sistema per eventi real-time.",
+      "description": "Evento real-time.",
       "properties": {
         "id": { "type": "string" },
         "tipo": { "type": "string" },
         "messaggio": { "type": "string" },
         "destinatario_uid": { "type": "string" },
-        "letta": { "type": "boolean" },
-        "riferimento_id": { "type": "string" },
-        "creato_il": { "type": "string", "format": "date-time" }
+        "letta": { "type": "boolean" }
       }
     }
   },
@@ -110,21 +85,6 @@
           "entityName": "Post",
           "schema": { "$ref": "#/backend/entities/Post" },
           "description": "Contenuti del PED."
-        }
-      },
-      {
-        "path": "clienti/{clienteId}/post/{postId}/commenti/{commentoId}",
-        "definition": {
-          "entityName": "Commento",
-          "description": "Discussioni sul singolo post."
-        }
-      },
-      {
-        "path": "clienti/{clienteId}/materiali/{materialId}",
-        "definition": {
-          "entityName": "Material",
-          "schema": { "$ref": "#/backend/entities/Material" },
-          "description": "Asset multimediali."
         }
       },
       {
