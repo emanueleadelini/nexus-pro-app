@@ -1,63 +1,72 @@
 rules_version = '2';
-
-/**
- * FIRESTORE SECURITY RULES - COMMUNICATION AGENCY MANAGEMENT APP
- * 
- * Core Philosophy:
- * This ruleset implements a strict multi-tenant authorization model.
- * Updated to allow Admins to create user profiles for new clients.
- */
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- HELPER FUNCTIONS ---
-
-    function isSignedIn() {
+    // === FUNZIONI HELPER ===
+    function isAuthenticated() {
       return request.auth != null;
     }
-
+    
     function getAuthProfile() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    function isAdmin() {
-      return isSignedIn() && getAuthProfile().data.ruolo == 'admin';
+    function getUserRole() {
+      return getAuthProfile().data.ruolo;
     }
 
-    function isClientOf(clienteId) {
-      return isSignedIn() && getAuthProfile().data.cliente_id == clienteId;
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserRole() == 'super_admin';
     }
 
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+    function isOperatore() {
+      return isAuthenticated() && getUserRole() == 'operatore';
     }
 
-    // --- COLLECTION RULES ---
+    function isAgency() {
+      return isSuperAdmin() || isOperatore();
+    }
 
+    function isClienteOwner(clienteId) {
+      return isAuthenticated() && getAuthProfile().data.cliente_id == clienteId;
+    }
+
+    function isReferente() {
+      return isAuthenticated() && getUserRole() == 'referente';
+    }
+
+    // === USERS ===
     match /users/{uid} {
-      allow get: if isOwner(uid) || isAdmin();
-      allow list: if isAdmin();
-      // Permettiamo la creazione del proprio profilo (bootstrap) o da parte di un admin (creazione clienti)
-      allow create: if isOwner(uid) || isAdmin(); 
-      allow update, delete: if isAdmin();
+      allow read: if isAuthenticated() && (request.auth.uid == uid || isAgency());
+      allow create: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
+      allow update: if isSuperAdmin() || (request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ruolo', 'permessi', 'cliente_id']));
+      allow delete: if isSuperAdmin();
     }
 
+    // === CLIENTI ===
     match /clienti/{clienteId} {
-      allow get, list: if isAdmin() || isClientOf(clienteId);
-      allow create, update, delete: if isAdmin();
+      allow read: if isAgency() || isClienteOwner(clienteId);
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || (isOperatore() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['post_totali', 'post_usati']))
+        || (isClienteOwner(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade']));
 
+      // POST
       match /post/{postId} {
-        allow get, list: if isAdmin() || isClientOf(clienteId);
-        allow create, update, delete: if isAdmin();
-        // Permettiamo al cliente solo l'approvazione del post
-        allow update: if isClientOf(clienteId) && request.resource.data.stato == 'approvato';
+        allow read: if isAgency() || isClienteOwner(clienteId);
+        allow create: if isAgency();
+        allow update: if isAgency() || (isClienteOwner(clienteId) && isReferente());
+        allow delete: if isAgency();
       }
 
-      match /materiali/{materialId} {
-        allow get, list: if isAdmin() || isClientOf(clienteId);
-        allow create: if isAdmin() || isClientOf(clienteId);
-        allow update, delete: if isAdmin();
+      // MATERIALI
+      match /materiali/{materialeId} {
+        allow read: if isAgency() || isClienteOwner(clienteId);
+        allow create: if isAgency() || isClienteOwner(clienteId);
+        allow update: if isAgency()
+          || (isClienteOwner(clienteId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['stato_validazione', 'note_rifiuto']));
+        allow delete: if isAgency();
       }
     }
   }
