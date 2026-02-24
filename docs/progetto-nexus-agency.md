@@ -1,99 +1,74 @@
-# Progetto Nexus Agency - Area Riservata Gestionale
+# Progetto Nexus Agency - Documentazione Tecnica e Funzionale
 
 ## 1. Descrizione Generale
-L'applicazione è un sistema gestionale multi-tenant per un'agenzia di comunicazione (Nexus Agency). Permette la gestione dei piani editoriali (PED) e degli asset digitali (Materiali) tra l'agenzia (Admin) e i suoi clienti.
+Il CRM Nexus Agency è una piattaforma gestionale multi-tenant progettata per ottimizzare la collaborazione tra un'agenzia di comunicazione e i suoi clienti. Il sistema gestisce il Piano Editoriale (PED), l'archiviazione di asset multimediali e la generazione di contenuti tramite Intelligenza Artificiale.
 
-### Stack Tecnologico
-- **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS.
-- **Backend**: Firebase (Authentication, Firestore).
-- **AI**: Google Gemini via Genkit per la generazione di post social.
-- **UI**: Shadcn UI, Lucide React (icone), Space Grotesk (titoli), Inter (body).
+## 2. Architettura Tecnologica
+- **Frontend**: Next.js 15 (App Router) con TypeScript.
+- **Interfaccia Utente**: Tailwind CSS e Shadcn UI per un design reattivo e professionale.
+- **Backend**: Firebase Suite (Authentication, Firestore Database).
+- **AI**: Google Gemini Pro tramite Genkit per la generazione assistita di copy social.
 
----
+## 3. Struttura Dati (Firestore)
 
-## 2. Architettura Dati (Firestore)
+### 3.1 Collezione `users/{uid}`
+Memorizza i profili utente e gestisce i permessi di accesso.
+- `email`: Email dell'utente.
+- `ruolo`: "admin" (Agenzia) o "cliente".
+- `cliente_id`: Riferimento univoco all'azienda associata (solo per ruolo cliente).
+- `nomeAzienda`: Nome visualizzato dell'azienda.
+- `creatoIl`: Timestamp di creazione del profilo.
 
-### users/{uid}
-- `email`: string
-- `ruolo`: "admin" | "cliente"
-- `cliente_id`: string (solo per clienti)
-- `nomeAzienda`: string
-- `creatoIl`: Timestamp
+### 3.2 Collezione `clienti/{clienteId}`
+Rappresenta le aziende clienti gestite dall'agenzia.
+- `nome_azienda`: Ragione sociale o nome commerciale.
+- `settore`: Settore merceologico.
+- `email_riferimento`: Contatto primario per comunicazioni.
+- `post_totali`: Limite massimo di post inclusi nel piano mensile.
+- `post_usati`: Conteggio dinamico dei post inseriti nel calendario.
+- `richiesta_upgrade`: Booleano per segnalare richieste di aumento budget post.
+- `creato_il`: Timestamp di registrazione.
 
-### clienti/{clienteId}
-- `nome_azienda`: string
-- `settore`: string
-- `email_riferimento`: string
-- `post_totali`: number
-- `post_usati`: number
-- `creato_il`: Timestamp
+#### Sotto-collezione `post/{postId}`
+Gestisce il Calendario Editoriale.
+- `titolo`: Titolo interno del post.
+- `testo`: Copy definitivo del post.
+- `stato`: "bozza", "da_approvare", "approvato", "pubblicato".
+- `materiale_id`: Riferimento all'asset multimediale collegato.
+- `data_pubblicazione`: Timestamp della data programmata.
+- `aggiornato_il`: Timestamp dell'ultima modifica (automatico).
 
-#### clienti/{clienteId}/post/{postId} (Sotto-collezione PED)
-- `titolo`: string
-- `testo`: string
-- `stato`: "bozza" | "da_approvare" | "approvato" | "pubblicato"
-- `data_pubblicazione`: ISO String
-- `creato_il`: Timestamp
+#### Sotto-collezione `materiali/{materialId}`
+Archivio degli asset multimediali scambiati.
+- `nome_file`: Nome originale del file o descrizione link.
+- `url_storage`: URL del file (per caricamenti diretti).
+- `link_esterno`: URL WeTransfer/Drive/Dropbox per file pesanti.
+- `caricato_da`: UID dell'utente che ha effettuato l'upload.
+- `stato_validazione`: "in_attesa", "validato", "rifiutato".
+- `destinazione`: "social", "sito", "offline".
+- `creato_il`: Timestamp automatico (Server Timestamp).
 
-#### clienti/{clienteId}/materiali/{materialId} (Sotto-collezione Asset)
-- `nome_file`: string
-- `destinazione`: "social" | "sito" | "offline"
-- `ruolo_caricatore`: "admin" | "cliente"
-- `stato_validazione`: "in_attesa" | "validato" | "rifiutato"
-- `note_rifiuto`: string (opzionale)
-- `creato_il`: ISO String
+## 4. Workflow e Logiche di Business
 
----
+### 4.1 Gestione Crediti Post
+Il sistema implementa un countdown automatico dei crediti. Ogni volta che un post viene creato (manualmente o via AI), il contatore `post_usati` aumenta. L'eliminazione di un post riaccredita automaticamente il punto al cliente. Una barra di progresso segnala visivamente il raggiungimento del limite.
 
-## 3. Codice Sorgente Principale
+### 4.2 Piano Editoriale (PED) Social-Style
+I post sono visualizzati in un'interfaccia che simula un feed social (Facebook/Instagram style) per permettere a cliente e agenzia di valutare l'impatto visivo reale del contenuto prima della pubblicazione.
 
-### Tipi Globali (`src/types/`)
-- `user.ts`, `client.ts`, `post.ts`, `material.ts`.
+### 4.3 Collaborazione sugli Asset
+- **Limite 50MB**: Per caricamenti diretti di foto e grafiche.
+- **Supporto Link**: Obbligatorio per video o cartelle pesanti (>50MB) tramite integrazione link esterni.
+- **Validazione**: L'Admin può approvare o rifiutare gli asset del cliente fornendo feedback immediato.
 
-### Layout e Guardie di Accesso
-- `src/app/admin/layout.tsx`: Verifica il ruolo "admin".
-- `src/app/cliente/layout.tsx`: Verifica il ruolo "cliente" e carica il `cliente_id`.
-- `src/app/page.tsx`: Gestisce il redirect automatico basato sulla sessione.
+### 4.4 Intelligenza Artificiale
+Il modulo AI utilizza modelli Gemini per generare bozze basate su:
+- Piattaforma specifica (Instagram, LinkedIn, ecc.).
+- Tono di voce desiderato.
+- Argomento e note specifiche.
 
-### Componenti Core
-- `GeneraBozzaModal.tsx`: Utilizza Genkit/Gemini per creare bozze social basate su piattaforma e tono.
-- `CreaPostManualeModal.tsx`: Permette l'inserimento manuale nel PED.
-- `CaricaMaterialeModal.tsx`: Gestisce l'invio di asset con selezione di destinazione.
+## 5. Sicurezza e Privacy
+L'accesso è regolato da **Firestore Security Rules** che garantiscono il multi-tenancy: i clienti possono accedere esclusivamente ai propri dati, mentre gli amministratori hanno una visione globale e il controllo totale sulla configurazione dei piani e degli utenti.
 
-### Flow AI (`src/ai/flows/generate-post-ai-flow.ts`)
-```typescript
-const generatePostPrompt = ai.definePrompt({
-  name: 'generatePostPrompt',
-  input: { schema: GeneratePostInputSchema },
-  output: { schema: GeneratePostOutputSchema },
-  prompt: `Sei un social media manager esperto... [prompt strutturato per Gemini]`,
-});
-```
-
----
-
-## 4. Logica di Business
-1. **Multi-Tenancy**: I clienti vedono solo la propria area grazie al filtraggio basato su `cliente_id` memorizzato nel profilo utente.
-2. **Workflow PED**: 
-   - Admin crea bozza (IA o manuale).
-   - Admin invia per approvazione.
-   - Cliente approva (diventa `approvato`).
-   - Admin segna come `pubblicato`.
-3. **Timeline Asset**: I materiali sono visualizzati in un raggruppamento giornaliero per tenere traccia dello storico scambi agenzia-cliente.
-4. **Validazione**: L'admin può approvare o rifiutare (con feedback) i materiali inviati dal cliente.
-
----
-
-## 5. File Sorgente Completi (Disponibili nel workspace)
-Il codice completo è distribuito nei file:
-- `src/app/admin/page.tsx`
-- `src/app/admin/clienti/[clienteId]/page.tsx`
-- `src/app/cliente/page.tsx`
-- `src/app/login/page.tsx`
-- `src/app/setup-admin/page.tsx`
-- `src/firebase/firestore/use-collection.tsx`
-- `src/firebase/firestore/use-doc.tsx`
-- `src/components/admin/genera-bozza-modal.tsx`
-- `src/components/admin/carica-materiale-modal.tsx`
-- `src/components/admin/crea-post-manuale-modal.tsx`
-- `firestore.rules` (Security Rules)
+## 6. Sincronizzazione Temporale
+Tutte le azioni critiche (caricamento file, creazione post, cambio stato) utilizzano i **Server Timestamp** di Firebase, garantendo che la cronologia degli scambi sia certificata e non modificabile manualmente dagli utenti.
