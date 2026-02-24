@@ -44,8 +44,8 @@ service cloud.firestore {
     // === USERS ===
     match /users/{uid} {
       allow read: if isAuthenticated() && (request.auth.uid == uid || isAgency());
-      allow create: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
-      allow update: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == uid);
+      allow create: if isAuthenticated() && request.auth.uid == uid;
+      allow update: if isAuthenticated() && (isSuperAdmin() || request.auth.uid == uid);
       allow delete: if isSuperAdmin();
     }
 
@@ -88,14 +88,15 @@ service cloud.firestore {
 
     // === NOTIFICHE ===
     match /notifiche/{notificaId} {
-      // Un utente può leggere le notifiche se è l'admin per email, se è un'agenzia o se è il destinatario
+      // Un utente può leggere le notifiche se è Admin, Agenzia o il destinatario specifico
       allow read: if isAuthenticated() && (
         isAdminEmail() || 
         isAgency() || 
-        (exists(resource.data) && resource.data.destinatario_uid == request.auth.uid) ||
-        (request.query.limit <= 20) // Permette listing filtrato
+        resource.data.destinatario_uid == request.auth.uid
       );
+      // Creazione permessa dal sistema (client-side) per eventi specifici
       allow create: if isAuthenticated(); 
+      // Update permesso per segnare come letta
       allow update: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow delete: if isSuperAdmin();
     }
