@@ -1,53 +1,46 @@
-# Progetto AD next lab - Documentazione Tecnica e Funzionale
+# AD next lab - Documentazione Tecnica e Funzionale (CRM Social Media)
 
-## 1. Descrizione Generale
-Il CRM AD next lab è una piattaforma gestionale multi-tenant di livello enterprise progettata per la collaborazione avanzata tra agenzia di comunicazione e clienti. Il sistema centralizza la gestione del Piano Editoriale (PED), degli asset multimediali e del feedback in tempo reale.
+## 1. Descrizione del Sistema
+**AD next lab** è un CRM di livello enterprise progettato per centralizzare la collaborazione tra agenzia e clienti. Il sistema gestisce l'intero ciclo di vita della comunicazione social, dalla pianificazione strategica assistita da AI alla pubblicazione finale, garantendo trasparenza e controllo tramite un sistema di versioning e feedback in tempo reale.
 
 ## 2. Architettura Tecnologica
-- **Frontend**: Next.js 15 (App Router).
-- **Backend**: Firebase (Auth, Firestore).
-- **AI**: Gemini 1.5 Flash via Genkit per la generazione assistita di copy strategico.
-- **Styling**: Tailwind CSS con componenti ShadCN UI.
+- **Frontend**: Next.js 15 (App Router) - Reattività e performance server-side.
+- **Backend**: Firebase (Authentication per l'accesso sicuro, Firestore per i dati real-time).
+- **AI Engine**: Google Gemini 1.5 Flash via Genkit - Generazione copy basata su Brand Brief.
+- **UI Framework**: Tailwind CSS + ShadCN UI - Design moderno, responsive e professionale.
 
-## 3. Struttura Dati e Ruoli (RBAC)
+## 3. Gestione Accessi e Ruoli (RBAC)
+Il sistema implementa 4 livelli di accesso con permessi granulari:
+- **Super Admin**: Controllo totale su sistema, clienti, piani e configurazioni.
+- **Operatore**: Gestione quotidiana dei post, degli asset e della strategia AI.
+- **Referente (Cliente)**: Potere decisionale; approva o richiede revisioni sui post.
+- **Collaboratore (Cliente)**: Visualizzazione calendario e caricamento materiali senza poteri di approvazione.
 
-### 3.1 Gerarchia Utenti e Permessi
-Il sistema implementa un controllo degli accessi basato sui ruoli (RBAC) a 4 livelli:
-- **Super Admin**: Controllo totale su sistema, configurazioni, clienti e fatturazione.
-- **Operatore**: Gestione operativa quotidiana dei post, degli asset e delle campagne per tutti i clienti.
-- **Referente (Cliente)**: Responsabile decisionale per l'azienda cliente. Può approvare post e richiedere revisioni.
-- **Collaboratore (Cliente)**: Visualizzazione del calendario e caricamento asset senza poteri di approvazione finale.
+## 4. Moduli Core
 
-### 3.2 Workflow Post a 7 Stati
-Per garantire la massima qualità, ogni post segue un percorso rigido:
-1. `bozza`: In lavorazione interna.
-2. `revisione_interna`: Review tra colleghi in agenzia.
-3. `da_approvare`: Visibile al cliente per approvazione.
-4. `revisione`: Il cliente ha richiesto modifiche (blocca il post).
-5. `approvato`: Confermato dal cliente.
-6. `programmato`: In attesa di pubblicazione.
-7. `pubblicato`: Archivio storico.
+### 4.1 Piano Editoriale (PED) Avanzato
+Ogni post segue un workflow rigido a 7 stati:
+1. `bozza` -> 2. `revisione_interna` -> 3. `da_approvare` -> 4. `revisione` -> 5. `approvato` -> 6. `programmato` -> 7. `pubblicato`.
+Il sistema registra ogni cambio di stato in una timeline dedicata e mantiene la cronologia completa di ogni modifica al testo (Versioning).
 
-## 4. Logiche di Business Core
+### 4.2 Archivio Asset e Materiali
+Gestione intelligente dei file multimediali:
+- **Limite 50MB**: Caricamento diretto di immagini e brevi video per mantenere la piattaforma performante.
+- **Link Esterni**: Supporto obbligatorio per file pesanti (>50MB) tramite integrazione di link (Google Drive, WeTransfer).
+- **Archivio Diviso**: Separazione netta tra materiali inviati dall'agenzia e materiali inviati dal cliente per una chiara responsabilità degli asset.
 
-### 4.1 Gestione Crediti Post
-Ogni cliente ha un limite mensile di post definito nel piano. Il sistema scala un credito alla creazione del post e lo riaccredita automaticamente in caso di eliminazione della bozza.
+### 4.3 Collaborazione e Feedback
+- **Sidebar Commenti**: Ogni post dispone di una chat contestuale dove agenzia e cliente discutono le modifiche.
+- **Centro Notifiche**: Sistema di notifiche push in-app (Campanella) per avvisare di nuovi post da approvare o nuovi commenti ricevuti.
 
-### 4.2 Collaborazione Real-time
-- **Sistema Commenti**: Ogni post ha una sidebar dedicata per discussioni contestuali tra agenzia e cliente.
-- **Centro Notifiche**: Notifiche istantanee in-app per cambi di stato, nuovi commenti o caricamento materiali.
-- **Versioning**: Ogni modifica al copy genera una nuova versione, permettendo di tracciare l'evoluzione del contenuto.
+### 4.4 Intelligenza Artificiale Strategica
+Strumenti di supporto al copywriting:
+- **Generazione Bozza**: Crea post personalizzati basati sul settore del cliente, il tono di voce e la piattaforma (Instagram, Facebook, LinkedIn, TikTok, ecc.).
+- **Ottimizzazione**: Suggerimenti automatici per migliorare l'engagement e il tono di voce.
 
-### 4.3 Gestione Asset e Limiti
-- **Upload Diretto**: Supportato per file fino a **50MB** (immagini, brevi video, documenti).
-- **Link Esterni**: Obbligatori per file pesanti (>50MB) tramite integrazione link (WeTransfer, Drive, ecc.).
-- **Archivio Separato**: Gli asset sono divisi tra "Inviati da Agenzia" e "Inviati da Cliente" per una chiarezza totale sulle responsabilità.
-
-## 5. Sicurezza e Multi-tenancy
-Le **Security Rules** di Firestore proteggono i dati garantendo che:
-- Gli operatori dell'agenzia vedano i dati di tutti i clienti.
-- Gli utenti cliente accedano esclusivamente ai dati associati al proprio `cliente_id`.
-- Le transizioni di stato sensibili (es. approvazione) siano permesse solo ai ruoli corretti.
+## 5. Logiche di Business e Sicurezza
+- **Gestione Crediti**: Ogni cliente ha un numero fisso di post mensili. Il sistema scala automaticamente i crediti e avvisa l'agenzia in caso di esaurimento o richiesta di upgrade.
+- **Multi-tenancy**: Isolamento totale dei dati tra i diversi clienti tramite Firestore Security Rules. Un cliente può vedere esclusivamente i post e i materiali associati al proprio ID azienda.
 
 ---
-*Documento aggiornato automaticamente allo stato corrente dello sviluppo (Sprint 2).*
+*Documento aggiornato automaticamente allo stato corrente dello sviluppo.*

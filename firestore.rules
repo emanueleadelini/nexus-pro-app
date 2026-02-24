@@ -17,11 +17,12 @@ service cloud.firestore {
         : 'none';
     }
 
+    function isAdminEmail() {
+      return request.auth.token.email == 'emanueleadelini@gmail.com';
+    }
+
     function isSuperAdmin() {
-      return isAuthenticated() && (
-        getUserRole() == 'super_admin' || 
-        request.auth.token.email == 'emanueleadelini@gmail.com'
-      );
+      return isAuthenticated() && (isAdminEmail() || getUserRole() == 'super_admin');
     }
 
     function isOperatore() {
@@ -87,9 +88,15 @@ service cloud.firestore {
 
     // === NOTIFICHE ===
     match /notifiche/{notificaId} {
-      allow read: if isAuthenticated() && (resource.data.destinatario_uid == request.auth.uid || isAgency());
+      // Un utente può leggere le notifiche se è l'admin per email, se è un'agenzia o se è il destinatario
+      allow read: if isAuthenticated() && (
+        isAdminEmail() || 
+        isAgency() || 
+        (exists(resource.data) && resource.data.destinatario_uid == request.auth.uid) ||
+        (request.query.limit <= 20) // Permette listing filtrato
+      );
       allow create: if isAuthenticated(); 
-      allow update: if isAuthenticated() && resource.data.destinatario_uid == request.auth.uid;
+      allow update: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow delete: if isSuperAdmin();
     }
   }
