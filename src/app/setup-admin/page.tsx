@@ -56,7 +56,7 @@ export default function SetupAdminPage() {
         const adminData = {
           email: user.email,
           ruolo: 'admin',
-          nomeAzienda: 'Nexus Agency',
+          nomeAzienda: 'AD next lab',
           creatoIl: serverTimestamp()
         };
 
@@ -97,7 +97,7 @@ export default function SetupAdminPage() {
           </div>
           <CardTitle className="text-2xl font-headline font-bold">Configurazione Admin</CardTitle>
           <CardDescription>
-            Imposta <strong>emanueleadelini@gmail.com</strong> come amministratore.
+            Imposta <strong>emanueleadelini@gmail.com</strong> come amministratore per AD next lab.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

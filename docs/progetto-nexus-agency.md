@@ -1,7 +1,7 @@
-# Progetto Nexus Agency - Documentazione Tecnica e Funzionale
+# Progetto AD next lab - Documentazione Tecnica e Funzionale
 
 ## 1. Descrizione Generale
-Il CRM Nexus Agency è una piattaforma gestionale multi-tenant progettata per ottimizzare la collaborazione tra un'agenzia di comunicazione e i suoi clienti. Il sistema gestisce il Piano Editoriale (PED), l'archiviazione di asset multimediali e la generazione di contenuti tramite Intelligenza Artificiale.
+Il CRM AD next lab è una piattaforma gestionale multi-tenant progettata per ottimizzare la collaborazione tra un'agenzia di comunicazione e i suoi clienti. Il sistema gestisce il Piano Editoriale (PED), l'archiviazione di asset multimediali e la generazione di contenuti tramite Intelligenza Artificiale.
 
 ## 2. Architettura Tecnologica
 - **Frontend**: Next.js 15 (App Router) con TypeScript.

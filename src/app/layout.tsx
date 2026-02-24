@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
 
 export const metadata: Metadata = {
-  title: 'Nexus Agency | Area Riservata',
+  title: 'AD next lab | Area Riservata',
   description: 'Gestione comunicazione per agenzia e clienti.',
 };
 

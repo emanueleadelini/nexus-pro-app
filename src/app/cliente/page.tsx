@@ -143,7 +143,7 @@ export default function ClienteDashboard() {
       }
       
       resetUploadForm();
-      toast({ title: "Materiale inviato!", description: "Il team Nexus lo validerà a breve." });
+      toast({ title: "Materiale inviato!", description: "Il team AD next lab lo validerà a breve." });
     } catch (e: any) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: matColRef.path, operation: 'create' }));
     } finally {
@@ -409,7 +409,7 @@ export default function ClienteDashboard() {
 
             <Tabs defaultValue="nexus">
               <TabsList className="w-full mb-6">
-                <TabsTrigger value="nexus" className="flex-1">Inviati da Nexus (Agenzia)</TabsTrigger>
+                <TabsTrigger value="nexus" className="flex-1">Inviati da AD next lab (Agenzia)</TabsTrigger>
                 <TabsTrigger value="client" className="flex-1">Inviati da Voi</TabsTrigger>
               </TabsList>
 

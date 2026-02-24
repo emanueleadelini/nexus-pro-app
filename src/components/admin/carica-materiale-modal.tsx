@@ -101,7 +101,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
         });
       }
 
-      toast({ title: 'Materiale caricato!', description: 'Gli asset sono stati aggiunti all\'archivio di Nexus.' });
+      toast({ title: 'Materiale caricato!', description: 'Gli asset sono stati aggiunti all\'archivio AD next lab.' });
       resetForm();
       onClose();
     } catch (error) {
@@ -175,7 +175,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
                 </div>
                 <div className="flex items-start gap-2 bg-indigo-50 p-2 rounded border border-indigo-100">
                   <AlertCircle className="w-3.5 h-3.5 text-indigo-600 mt-0.5 shrink-0" />
-                  <p className="text-[10px] text-indigo-700 leading-tight">Usa questa opzione per video &gt; 50MB, cartelle Drive o link WeTransfer per non sovraccaricare la piattaforma.</p>
+                  <p className="text-[10px] text-indigo-700 leading-tight">Usa questa opzione per video &gt; 50MB o cartelle Drive/Dropbox per non sovraccaricare la piattaforma.</p>
                 </div>
               </div>
             </TabsContent>

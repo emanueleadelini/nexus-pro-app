@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Flow per la generazione di post social con Gemini.
+ * @fileOverview Flow per la generazione di post social con Gemini per AD next lab.
  */
 
 import { ai } from '@/ai/genkit';
@@ -34,8 +34,8 @@ const generatePostPrompt = ai.definePrompt({
   name: 'generatePostPrompt',
   input: { schema: GeneratePostInputSchema },
   output: { schema: GeneratePostOutputSchema },
-  prompt: `Sei un social media manager esperto per un'agenzia di comunicazione italiana.
-Devi generare un post per i social media.
+  prompt: `Sei un social media manager esperto per AD next lab, un'agenzia di comunicazione italiana d'avanguardia.
+Devi generare un post per i social media per uno dei nostri clienti.
 
 CLIENTE: {{{nomeAzienda}}}
 SETTORE: {{{settore}}}
@@ -45,7 +45,7 @@ ARGOMENTO: {{{argomento}}}
 NOTE AGGIUNTIVE: {{{noteAggiuntive}}}
 
 ISTRUZIONI:
-1. Scrivi in italiano.
+1. Scrivi in italiano in modo professionale e coinvolgente.
 2. Adatta il linguaggio alla piattaforma indicata.
 3. Usa il tono di voce richiesto.
 4. NON inventare informazioni specifiche (prezzi, date, indirizzi) a meno che non siano nelle note.

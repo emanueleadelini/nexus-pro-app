@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -56,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="bg-indigo-600 p-2 rounded-lg">
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-headline font-bold text-gray-900 tracking-tight">Nexus Admin</h1>
+          <h1 className="text-xl font-headline font-bold text-gray-900 tracking-tight">AD next lab Admin</h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-1 mt-4">
@@ -86,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b p-4 flex justify-between items-center shadow-sm">
           <h1 className="font-headline font-bold text-indigo-600 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5" /> Nexus
+            <ShieldCheck className="w-5 h-5" /> AD next lab
           </h1>
           <Button variant="ghost" size="icon" onClick={() => auth.signOut()}>
             <LogOut className="w-5 h-5 text-red-600" />

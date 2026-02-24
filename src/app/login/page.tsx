@@ -94,7 +94,7 @@ export default function LoginPage() {
                 <ShieldCheck className="w-8 h-8 text-white" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-headline font-bold text-center text-gray-900">Nexus Agency</CardTitle>
+            <CardTitle className="text-3xl font-headline font-bold text-center text-gray-900">AD next lab</CardTitle>
             <CardDescription className="text-center text-gray-500 font-medium">Area Riservata Gestionale</CardDescription>
           </CardHeader>
           <CardContent className="p-8">
@@ -107,7 +107,7 @@ export default function LoginPage() {
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
-                  placeholder="nome@agenzia.it"
+                  placeholder="nome@adnextlab.it"
                   className="rounded-lg border-gray-200 focus:ring-indigo-500"
                 />
               </div>

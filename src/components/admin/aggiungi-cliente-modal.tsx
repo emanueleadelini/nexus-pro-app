@@ -132,7 +132,7 @@ export function AggiungiClienteModal({ isOpen, onClose }: Props) {
             <Building2 className="w-5 h-5" /> Nuovo Cliente & Account
           </DialogTitle>
           <DialogDescription>
-            Configura l'azienda e le credenziali di accesso per il cliente.
+            Configura l'azienda e le credenziali di accesso per il cliente AD next lab.
           </DialogDescription>
         </DialogHeader>
 
@@ -149,7 +149,7 @@ export function AggiungiClienteModal({ isOpen, onClose }: Props) {
                   id="nome" 
                   value={formData.nome_azienda} 
                   onChange={(e) => setFormData({...formData, nome_azienda: e.target.value})} 
-                  placeholder="es. Nexus S.r.l."
+                  placeholder="es. AD next lab S.r.l."
                   required
                 />
               </div>

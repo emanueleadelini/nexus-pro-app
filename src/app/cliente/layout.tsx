@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -50,7 +49,7 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
       <header className="bg-white border-b border-gray-200/50 h-20 flex items-center justify-between px-6 md:px-12 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="font-headline font-bold text-2xl text-indigo-600 flex items-center gap-2">
-            <Briefcase className="w-7 h-7" /> Nexus <span className="text-gray-300 font-light hidden sm:inline">Agency</span>
+            <Briefcase className="w-7 h-7" /> AD next lab
           </div>
           <div className="hidden md:block h-8 w-px bg-gray-200" />
           <div className="hidden md:flex items-center gap-3 text-sm text-gray-600 font-bold bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
@@ -79,7 +78,7 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
       </main>
 
       <footer className="bg-white border-t border-gray-100 p-6 text-center text-gray-400 text-xs">
-        &copy; {new Date().getFullYear()} Nexus Agency - Tutti i diritti riservati.
+        &copy; {new Date().getFullYear()} AD next lab - Tutti i diritti riservati.
       </footer>
     </div>
   );
