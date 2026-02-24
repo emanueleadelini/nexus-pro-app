@@ -12,7 +12,10 @@ service cloud.firestore {
     }
 
     function getUserRole() {
-      return getAuthProfile().data.ruolo;
+      // Usiamo una logica sicura: se il documento non esiste, non ha ruolo
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+        ? getAuthProfile().data.ruolo 
+        : 'none';
     }
 
     function isSuperAdmin() {
@@ -38,6 +41,7 @@ service cloud.firestore {
     // === USERS ===
     match /users/{uid} {
       allow read: if isAuthenticated() && (request.auth.uid == uid || isAgency());
+      // Consente la creazione se l'utente sta creando il proprio profilo (bootstrap) o se è un super_admin
       allow create: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
       allow update: if isSuperAdmin() || (request.auth.uid == uid
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ruolo', 'permessi', 'cliente_id']));
