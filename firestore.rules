@@ -62,7 +62,7 @@ service cloud.firestore {
 
     match /clienti/{clienteId} {
       allow get: if isAgency() || isClienteOwner(clienteId);
-      allow list: if isAgency(); // Solo agenzia può listare tutti i clienti
+      allow list: if isAgency();
       allow create: if isAgency(); 
       allow update: if isAgency() || (isClienteOwner(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade']));
       allow delete: if isSuperAdmin();

@@ -48,7 +48,7 @@ Il sistema implementa una macchina a stati finiti per il ciclo di vita dei conte
 
 ### 4.1 Security Rules (Safe RBAC)
 ```javascript
-// firestore.rules
+// firestore.rules (Estratto Helper)
 function getUserRole() {
   return request.auth.token.ruolo != null
     ? request.auth.token.ruolo
