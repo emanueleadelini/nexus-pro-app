@@ -10,25 +10,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Legge il ruolo in modo sicuro: prioritizza i claims, poi Firestore, poi fallback 'guest'
+    // FIX: Rimosso isAuthenticated() && per evitare type error boolean && string
     function getUserRole() {
-      return !isAuthenticated() ? 'guest' : (
-        request.auth.token.ruolo != null
-          ? request.auth.token.ruolo
-          : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
-              ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo
-              : 'guest')
-      );
+      return request.auth.token.ruolo != null
+        ? request.auth.token.ruolo
+        : (exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo 
+            : 'guest');
     }
 
     function getClienteId() {
-      return !isAuthenticated() ? null : (
-        request.auth.token.cliente_id != null
-          ? request.auth.token.cliente_id
-          : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
-              ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cliente_id
-              : null)
-      );
+      return request.auth.token.cliente_id != null
+        ? request.auth.token.cliente_id
+        : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cliente_id
+            : null);
     }
 
     function isSuperAdmin() {
@@ -40,7 +36,6 @@ service cloud.firestore {
     }
 
     function isAgency() {
-      // Evitiamo variabili let per compatibilità e usiamo logica short-circuit
       return isSuperAdmin() || getUserRole() == 'operatore';
     }
 
@@ -66,7 +61,8 @@ service cloud.firestore {
     // ╚══════════════════════════════════════════╝
 
     match /clienti/{clienteId} {
-      allow read: if isAgency() || isClienteOwner(clienteId);
+      allow get: if isAgency() || isClienteOwner(clienteId);
+      allow list: if isAgency(); // Solo agenzia può listare tutti i clienti
       allow create: if isAgency(); 
       allow update: if isAgency() || (isClienteOwner(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade']));
       allow delete: if isSuperAdmin();
@@ -98,10 +94,13 @@ service cloud.firestore {
     // ╚══════════════════════════════════════════╝
 
     match /notifiche/{notificaId} {
-      // List e Get permessi se l'utente è destinatario o agenzia
-      allow list, get: if isAuthenticated() && (
+      allow list: if isAuthenticated() && (
         isAgency() || 
-        (resource != null && resource.data.destinatario_uid == request.auth.uid)
+        resource.data.destinatario_uid == request.auth.uid
+      );
+      allow get: if isAuthenticated() && (
+        isAgency() || 
+        resource.data.destinatario_uid == request.auth.uid
       );
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
