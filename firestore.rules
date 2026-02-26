@@ -24,17 +24,21 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      let role = getUserRole();
-      return role == 'super_admin' || role == 'admin';
+      // Controllo di sicurezza basato su email per il setup iniziale + ruolo super_admin
+      return isAuthenticated() && (
+        request.auth.token.email == 'emanueleadelini@gmail.com' ||
+        getUserRole() == 'super_admin' || 
+        getUserRole() == 'admin'
+      );
     }
 
     function isAgency() {
       let role = getUserRole();
-      return role in ['super_admin', 'operatore', 'admin'];
+      return isSuperAdmin() || role == 'operatore';
     }
 
     function isClienteOwner(clienteId) {
-      return getClienteId() == clienteId;
+      return isAuthenticated() && getClienteId() == clienteId;
     }
 
     // ╔══════════════════════════════════════════╗
@@ -44,9 +48,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow get: if isAuthenticated() && (request.auth.uid == uid || isAgency());
       allow list: if isAgency();
-      // Permetti la creazione del proprio profilo durante il setup iniziale o setup-admin
       allow create: if isAuthenticated() && request.auth.uid == uid;
-      // Permetti l'aggiornamento del profilo ma proteggi i campi critici se non è agenzia
       allow update: if isAgency() || (request.auth.uid == uid 
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ruolo', 'permessi', 'cliente_id']));
       allow delete: if isSuperAdmin();
@@ -58,7 +60,7 @@ service cloud.firestore {
 
     match /clienti/{clienteId} {
       allow read: if isAgency() || isClienteOwner(clienteId);
-      allow create: if isSuperAdmin() || isAgency(); // Permetti creazione da agenzia per onboarding
+      allow create: if isAgency(); 
       allow update: if isAgency() || (isClienteOwner(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade']));
       allow delete: if isSuperAdmin();
 
@@ -92,7 +94,6 @@ service cloud.firestore {
     // ╚══════════════════════════════════════════╝
 
     match /notifiche/{notificaId} {
-      // FIX CRITICO: Usa resource.data per il listing. Il filtro query deve corrispondere.
       allow list: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow get: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow create: if isAuthenticated();
