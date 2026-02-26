@@ -39,14 +39,16 @@ Il sistema implementa una macchina a stati finiti per il ciclo di vita dei conte
 - Notifica automatica al Super Admin per richieste di upgrade.
 
 ### 3.3 Gestione Asset e Limiti
-- **Upload Locale**: Limite hardware di 50MB per file caricati direttamente.
+- **Upload Locale**: Limite hardware di 50MB per file caricati direttamente tramite `CaricaMaterialeModal`.
 - **Link Esterni**: Supporto per URL Drive/WeTransfer per asset pesanti (>50MB).
 
 ---
 
-## 4. Codice Sorgente Core (Analisi Ingegneristica)
+## 4. Codice Sorgente Core
 
 ### 4.1 Security Rules (Safe RBAC)
+Le regole utilizzano una logica di fallback per garantire l'accesso anche prima della propagazione dei Custom Claims.
+
 ```javascript
 function getUserRole() {
   return request.auth.token.ruolo != null
@@ -64,7 +66,7 @@ match /notifiche/{notificaId} {
 ```
 
 ### 4.2 Hook Real-time (useCollection)
-Il sistema utilizza hook custom per gestire sottoscrizioni real-time con gestione centralizzata degli errori di permessi.
+Gestione centralizzata delle sottoscrizioni Firestore con emissione di errori contestuali.
 
 ```tsx
 export function useCollection<T = any>(memoizedTargetRefOrQuery) {
@@ -98,22 +100,8 @@ const generatePostPrompt = ai.definePrompt({
   name: 'generatePostPrompt',
   input: { schema: GeneratePostInputSchema },
   output: { schema: GeneratePostOutputSchema },
-  prompt: `Sei un social media manager esperto per AD next lab. 
-           Genera un post per {{{nomeAzienda}}} in tono {{{tono.label}}}.`,
+  prompt: `Sei un social media manager esperto per AD next lab. Genera un post per {{{nomeAzienda}}} in tono {{{tono.label}}}.`,
 });
-```
-
-### 4.4 Gestione Permessi (usePermessi)
-Il frontend implementa un hook per il controllo granulare dell'interfaccia utente basato sull'array `permessi` del profilo Firestore.
-
-```ts
-export function usePermessi() {
-  const { user } = useUser();
-  const [permessi, setPermessi] = useState<string[]>([]);
-  // ... fetch from Firestore users/{uid}
-  const haPermesso = (permesso: string) => permessi.includes(permesso) || ruolo === 'super_admin';
-  return { haPermesso, ruolo };
-}
 ```
 
 ---

@@ -10,15 +10,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdminEmail() {
-      return isAuthenticated() && request.auth.token.email == 'emanueleadelini@gmail.com';
-    }
-
+    // Legge il ruolo dai custom claims (V1) o dal documento user (V2 fallback)
     function getUserRole() {
       return request.auth.token.ruolo != null
         ? request.auth.token.ruolo
-        : (exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
-            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo 
+        : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo
             : 'guest');
     }
 
@@ -31,15 +28,17 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return isAdminEmail() || getUserRole() == 'super_admin' || getUserRole() == 'admin';
+      let role = getUserRole();
+      return role == 'super_admin' || role == 'admin';
     }
 
     function isAgency() {
-      return isSuperAdmin() || getUserRole() == 'operatore';
+      let role = getUserRole();
+      return role in ['super_admin', 'operatore', 'admin'];
     }
 
     function isClienteOwner(clienteId) {
-      return isAuthenticated() && getClienteId() == clienteId;
+      return getClienteId() == clienteId;
     }
 
     // ╔══════════════════════════════════════════╗
@@ -48,11 +47,11 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow get: if isAuthenticated() && (request.auth.uid == uid || isAgency());
-      allow list: if isAgency();
+      allow list: if isAuthenticated() && isAgency();
       allow create: if isAuthenticated() && request.auth.uid == uid;
-      allow update: if isAgency() || (request.auth.uid == uid 
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ruolo', 'permessi', 'cliente_id']));
-      allow delete: if isSuperAdmin();
+      allow update: if isAuthenticated() && (isAgency() || (request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ruolo', 'permessi', 'cliente_id'])));
+      allow delete: if isAuthenticated() && isSuperAdmin();
     }
 
     // ╔══════════════════════════════════════════╗
@@ -60,31 +59,35 @@ service cloud.firestore {
     // ╚══════════════════════════════════════════╝
 
     match /clienti/{clienteId} {
-      allow get: if isAgency() || isClienteOwner(clienteId);
-      allow list: if isAgency();
-      allow create: if isAgency(); 
-      allow update: if isAgency() || (isClienteOwner(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade']));
-      allow delete: if isSuperAdmin();
+      allow get: if isAuthenticated() && (isAgency() || isClienteOwner(clienteId));
+      allow list: if isAuthenticated() && isAgency();
+      allow create: if isAuthenticated() && (isSuperAdmin() || isAgency());
+      allow update: if isAuthenticated() && (isAgency() || (isClienteOwner(clienteId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade'])));
+      allow delete: if isAuthenticated() && isSuperAdmin();
 
+      // ── POST ──
       match /post/{postId} {
-        allow read: if isAgency() || isClienteOwner(clienteId);
-        allow create: if isAgency();
-        allow update: if isAgency() || (isClienteOwner(clienteId) && getUserRole() in ['referente', 'super_admin']);
-        allow delete: if isAgency();
+        allow read: if isAuthenticated() && (isAgency() || isClienteOwner(clienteId));
+        allow create: if isAuthenticated() && isAgency();
+        allow update: if isAuthenticated() && (isAgency() || (isClienteOwner(clienteId) && getUserRole() in ['referente', 'super_admin']));
+        allow delete: if isAuthenticated() && isAgency();
 
+        // ── COMMENTI ──
         match /commenti/{commentoId} {
-          allow read: if isAgency() || isClienteOwner(clienteId);
+          allow read: if isAuthenticated() && (isAgency() || isClienteOwner(clienteId));
           allow create: if isAuthenticated();
-          allow update: if isAgency();
-          allow delete: if isSuperAdmin();
+          allow update: if isAuthenticated() && isAgency();
+          allow delete: if isAuthenticated() && isSuperAdmin();
         }
       }
 
+      // ── MATERIALI ──
       match /materiali/{materialeId} {
-        allow read: if isAgency() || isClienteOwner(clienteId);
-        allow create: if isAgency() || isClienteOwner(clienteId);
-        allow update: if isAgency() || isClienteOwner(clienteId);
-        allow delete: if isAgency();
+        allow read: if isAuthenticated() && (isAgency() || isClienteOwner(clienteId));
+        allow create: if isAuthenticated() && (isAgency() || isClienteOwner(clienteId));
+        allow update: if isAuthenticated() && (isAgency() || isClienteOwner(clienteId));
+        allow delete: if isAuthenticated() && isAgency();
       }
     }
 
@@ -93,17 +96,11 @@ service cloud.firestore {
     // ╚══════════════════════════════════════════╝
 
     match /notifiche/{notificaId} {
-      allow list: if isAuthenticated() && (
-        isAgency() || 
-        resource.data.destinatario_uid == request.auth.uid
-      );
-      allow get: if isAuthenticated() && (
-        isAgency() || 
-        resource.data.destinatario_uid == request.auth.uid
-      );
+      allow list: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
+      allow get: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
-      allow delete: if isSuperAdmin();
+      allow delete: if isAuthenticated() && isSuperAdmin();
     }
   }
 }
