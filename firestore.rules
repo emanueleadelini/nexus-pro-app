@@ -44,8 +44,9 @@ service cloud.firestore {
     match /users/{uid} {
       allow get: if isAuthenticated() && (request.auth.uid == uid || isAgency());
       allow list: if isAgency();
-      // Permetti la creazione del proprio profilo durante il setup iniziale
+      // Permetti la creazione del proprio profilo durante il setup iniziale o setup-admin
       allow create: if isAuthenticated() && request.auth.uid == uid;
+      // Permetti l'aggiornamento del profilo ma proteggi i campi critici se non è agenzia
       allow update: if isAgency() || (request.auth.uid == uid 
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ruolo', 'permessi', 'cliente_id']));
       allow delete: if isSuperAdmin();
@@ -57,8 +58,9 @@ service cloud.firestore {
 
     match /clienti/{clienteId} {
       allow read: if isAgency() || isClienteOwner(clienteId);
-      allow create, delete: if isSuperAdmin();
-      allow update: if isAgency() || isClienteOwner(clienteId);
+      allow create: if isSuperAdmin() || isAgency(); // Permetti creazione da agenzia per onboarding
+      allow update: if isAgency() || (isClienteOwner(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['richiesta_upgrade']));
+      allow delete: if isSuperAdmin();
 
       // ── POST ──
       match /post/{postId} {
@@ -90,8 +92,8 @@ service cloud.firestore {
     // ╚══════════════════════════════════════════╝
 
     match /notifiche/{notificaId} {
-      // Regola per il listing: deve filtrare per destinatario_uid o essere agenzia
-      allow list: if isAuthenticated() && (isAgency() || request.query.filters.destinatario_uid == request.auth.uid);
+      // FIX CRITICO: Usa resource.data per il listing. Il filtro query deve corrispondere.
+      allow list: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow get: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (isAgency() || resource.data.destinatario_uid == request.auth.uid);
