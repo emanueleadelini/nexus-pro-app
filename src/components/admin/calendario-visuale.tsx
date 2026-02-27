@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -78,7 +77,7 @@ function DraggablePostCard({ post, isOverlay = false }: { post: Post; isOverlay?
       <GripVertical className="w-3 h-3 opacity-30 group-hover:opacity-100" />
       <span className="truncate font-bold uppercase flex-1">{post.titolo}</span>
       <Badge variant="outline" className="text-[7px] py-0 px-1 border-current/20 opacity-70">
-        {PIATTAFORMA_LABELS[post.piattaforma].charAt(0)}
+        {PIATTAFORMA_LABELS[post.piattaforma] ? PIATTAFORMA_LABELS[post.piattaforma].charAt(0) : 'P'}
       </Badge>
     </div>
   );
@@ -153,7 +152,11 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
       const targetDate = new Date(targetDateStr);
       
       // Mantieni l'ora originale se possibile, altrimenti usa 10:00
-      const originalDate = post.data_pubblicazione?.toDate() || new Date();
+      let originalDate = new Date();
+      if (post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function') {
+        originalDate = post.data_pubblicazione.toDate();
+      }
+      
       targetDate.setHours(originalDate.getHours() || 10);
       targetDate.setMinutes(originalDate.getMinutes() || 0);
 
@@ -202,7 +205,7 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
         <div className="flex gap-4">
            {['bozza', 'da_approvare', 'approvato', 'pubblicato'].map(s => (
              <div key={s} className="flex items-center gap-1.5">
-               <div className={`h-2 w-2 rounded-full ${STATO_POST_COLORS[s as any].bg.replace('bg-', 'bg-')}`}></div>
+               <div className={`h-2 w-2 rounded-full ${STATO_POST_COLORS[s as any]?.bg?.replace('bg-', 'bg-') || 'bg-gray-300'}`}></div>
                <span className="text-[10px] font-bold text-gray-400 uppercase">{STATO_POST_LABELS[s as any]}</span>
              </div>
            ))}
@@ -226,7 +229,12 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
 
           <div className="grid grid-cols-7 border-l">
             {days.map(day => {
-              const postsInDay = posts.filter(p => p.data_pubblicazione && isSameDay(p.data_pubblicazione.toDate(), day));
+              const postsInDay = posts.filter(p => {
+                if (!p.data_pubblicazione) return false;
+                // Controllo sicuro che sia un Timestamp di Firestore
+                if (typeof p.data_pubblicazione.toDate !== 'function') return false;
+                return isSameDay(p.data_pubblicazione.toDate(), day);
+              });
               return (
                 <CalendarDayCell key={day.toISOString()} date={day} posts={postsInDay} />
               );
