@@ -7,12 +7,12 @@ import { getFirestore } from 'firebase/firestore'
 
 /**
  * Inizializza l'istanza Firebase per l'applicazione.
- * Forza l'uso di firebaseConfig per evitare che Firebase Studio instradi
- * le chiamate verso l'emulatore locale (che potrebbe avere regole diverse o assenti).
+ * Forza l'uso di firebaseConfig per garantire la connessione al Cloud di produzione
+ * ed evitare l'instradamento automatico verso l'emulatore locale di Firebase Studio.
  */
 export function initializeFirebase() {
   if (!getApps().length) {
-    // Utilizziamo sempre la configurazione esplicita per garantire la connessione al Cloud.
+    // Utilizziamo SEMPRE la configurazione esplicita per garantire la connessione al Cloud.
     const firebaseApp = initializeApp(firebaseConfig);
     return getSdks(firebaseApp);
   }
