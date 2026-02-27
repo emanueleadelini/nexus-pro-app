@@ -1,6 +1,6 @@
 # AD Next Lab - Manuale Tecnico Master (Documentazione Integrale)
 
-Questo documento contiene l'analisi ingegneristica completa, l'architettura e il codice sorgente logico della piattaforma AD Next Lab.
+Questo documento contiene l'analisi ingegneristica completa, l'architettura e il codice sorgente integrale della piattaforma AD Next Lab. È destinato all'uso esclusivo del team ingegneristico per audit e sviluppo.
 
 ---
 
@@ -8,89 +8,157 @@ Questo documento contiene l'analisi ingegneristica completa, l'architettura e il
 - **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, ShadCN UI.
 - **Backend**: Firebase 11 (Firestore, Authentication).
 - **AI Engine**: Genkit 1.x con plugin Google Generative AI (Gemini 2.5 Flash).
-- **Pattern**: Multi-tenant basato su `cliente_id` con RBAC a 4 livelli: `super_admin`, `operatore`, `referente` (cliente), `collaboratore`.
+- **Pattern**: Multi-tenant basato su `cliente_id` con RBAC a 4 livelli: `super_admin`, `operatore`, `referente`, `collaboratore`.
 
 ---
 
-## 2. Modello Dati (Firestore Collections)
+## 2. Configurazione e Inizializzazione (src/firebase/)
 
-### 2.1 Collezioni e Schema
-- `/users/{uid}`: Profili utenti.
-- `/clienti/{clienteId}`: Aziende clienti e gestione crediti post.
-- `/clienti/{clienteId}/post/{postId}`: Piano Editoriale con workflow a 7 stati.
-- `/clienti/{clienteId}/materiali/{materialeId}`: Archivio asset (limite hardware 50MB).
-- `/notifiche/{id}`: Eventi real-time.
-
----
-
-## 3. Logiche di Business Core
-
-### 3.1 Workflow Contenuti (7 Stati)
-Il ciclo di vita di un post è così definito:
-1. `bozza` -> 2. `revisione_interna` -> 3. `da_approvare` -> 4. `revisione` -> 5. `approvato` -> 6. `programmato` -> 7. `pubblicato`.
-
-### 3.2 Sistema Crediti
-Ogni post creato dall'agenzia incrementa `post_usati` nel documento cliente. Se una bozza viene eliminata, il contatore viene decrementato (riaccredito). Il cliente può richiedere upgrade tramite il flag `richiesta_upgrade`.
-
----
-
-## 4. Codice Sorgente Logico (Snippet Integrali)
-
-### 4.1 Security Rules (Logica di Protezione V5)
-```javascript
-function getUserRole() {
-  return request.auth.token.ruolo != null
-    ? request.auth.token.ruolo
-    : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo
-        : 'guest');
-}
-
-function isAgency() {
-  let role = getUserRole();
-  return role in ['super_admin', 'operatore', 'admin'];
-}
-
-match /clienti/{clienteId} {
-  allow get: if isAuthenticated() && (isAgency() || getClienteId() == clienteId);
-  allow list: if isAuthenticated() && isAgency();
-}
+### 2.1 Configurazione (config.ts)
+```typescript
+export const firebaseConfig = {
+  "projectId": "studio-1172125722-4fbeb",
+  "appId": "1:93997751906:web:f34d376284a6232765bb3b",
+  "apiKey": "AIzaSyCydvNHxTZMivgQDGClqopoG1PiE_gZsBA",
+  "authDomain": "studio-1172125722-4fbeb.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "93997751906"
+};
 ```
 
-### 4.2 Hook useCollection (Real-time & Contextual Errors)
+### 2.2 Provider Core (provider.tsx)
 ```typescript
-export function useCollection<T = any>(memoizedTargetRefOrQuery: Query | null) {
+'use client';
+import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import { FirebaseApp } from 'firebase/app';
+import { Firestore } from 'firebase/firestore';
+import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+
+export const FirebaseContext = createContext<any>(undefined);
+
+export const FirebaseProvider = ({ children, firebaseApp, firestore, auth }) => {
+  const [userState, setUserState] = useState({ user: null, isUserLoading: true });
+
   useEffect(() => {
-    if (!memoizedTargetRefOrQuery) return;
-    const unsubscribe = onSnapshot(memoizedTargetRefOrQuery, 
-      (snapshot) => { /* Update State */ },
-      (serverError) => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUserState({ user: u, isUserLoading: false });
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  const contextValue = useMemo(() => ({
+    firebaseApp, firestore, auth, ...userState
+  }), [firebaseApp, firestore, auth, userState]);
+
+  return (
+    <FirebaseContext.Provider value={contextValue}>
+      <FirebaseErrorListener />
+      {children}
+    </FirebaseContext.Provider>
+  );
+};
+
+export const useFirebase = () => useContext(FirebaseContext);
+export const useFirestore = () => useFirebase().firestore;
+export const useAuth = () => useFirebase().auth;
+export const useUser = () => {
+  const { user, isUserLoading } = useFirebase();
+  return { user, isUserLoading };
+};
+```
+
+---
+
+## 3. Custom Hooks Firestore (src/firebase/firestore/)
+
+### 3.1 useCollection.tsx
+```typescript
+'use client';
+import { useState, useEffect } from 'react';
+import { onSnapshot, QuerySnapshot, FirestoreError } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
+export function useCollection(memoizedQuery) {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!memoizedQuery) return;
+    setIsLoading(true);
+
+    const unsubscribe = onSnapshot(memoizedQuery, 
+      (snapshot) => {
+        setData(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        setIsLoading(false);
+      },
+      (error) => {
         const contextualError = new FirestorePermissionError({
           operation: 'list',
-          path: memoizedTargetRefOrQuery.path
+          path: memoizedQuery.path || 'query'
         });
         errorEmitter.emit('permission-error', contextualError);
+        setIsLoading(false);
       }
     );
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]);
+  }, [memoizedQuery]);
+
+  return { data, isLoading };
 }
 ```
 
-### 4.3 Genkit AI Flow (Generazione Copy)
+---
+
+## 4. Logiche AI (src/ai/flows/)
+
+### 4.1 Generazione Post (generate-post-ai-flow.ts)
 ```typescript
-export const generatePostPrompt = ai.definePrompt({
-  name: 'generatePostPrompt',
-  prompt: `Sei un social media manager esperto per AD next lab. Genera un post per {{{nomeAzienda}}} nel settore {{{settore}}} per la piattaforma {{{piattaforma}}}. Tono: {{{tono}}}. Argomento: {{{argomento}}}.`,
+'use server';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+
+const GeneratePostInputSchema = z.object({
+  nomeAzienda: z.string(),
+  settore: z.string(),
+  piattaforma: z.object({ label: z.string(), istruzioni: z.string() }),
+  tono: z.object({ label: z.string(), descrizione: z.string() }),
+  argomento: z.string(),
 });
+
+export const generateSocialPost = async (input) => {
+  const prompt = ai.definePrompt({
+    name: 'generatePostPrompt',
+    input: { schema: GeneratePostInputSchema },
+    prompt: `Sei un esperto SMM per AD next lab. Genera un post per {{{nomeAzienda}}}...`,
+  });
+  const { output } = await prompt(input);
+  return output;
+};
 ```
 
 ---
 
-## 5. Vincoli Tecnici e Sicurezza
-- **Upload**: Limite massimo 50MB per caricamento diretto. Per file >50MB si utilizza il sistema di link esterni (Drive/WeTransfer) nell'archivio.
-- **Transizioni**: Ogni cambio di stato viene registrato nello `storico_stati` con UID autore e timestamp.
-- **Versionamento**: Ogni modifica al testo del post crea una nuova entry nell'array `versioni`.
+## 5. Security Rules (firestore.rules)
+*(Attualmente in modalità di test aperto per debug)*
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
 
 ---
-*Documento tecnico riservato ad uso esclusivo del team ingegneristico.*
+
+## 6. Business Logic: Workflow e Crediti
+- **Workflow (7 stati)**: `bozza` -> `revisione_interna` -> `da_approvare` -> `revisione` -> `approvato` -> `programmato` -> `pubblicato`.
+- **Sistema Crediti**: Ogni post creato decrementa il saldo `post_totali - post_usati`. L'eliminazione di una bozza riaccredita il punto.
+- **Gestione Asset**: Limite hardware di 50MB per upload diretto. Oltre tale soglia, il sistema utilizza riferimenti a link esterni (Drive/WeTransfer) salvati nel metadato `link_esterno`.
+
+---
+*Documento generato per audit tecnico - Versione 1.0*
