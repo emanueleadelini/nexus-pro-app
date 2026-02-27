@@ -133,7 +133,7 @@ export default function ClienteDashboard() {
 
   if (isClientLoading || !clienteId) return <div className="space-y-6 p-8"><Skeleton className="h-32 w-full" /><Skeleton className="h-64" /></div>;
 
-  const postTotali = client.post_totali || 0;
+  const postTotali = client?.post_totali || 0;
   const postUsati = posts?.length || 0;
   const usagePercent = (postUsati / (postTotali || 1)) * 100;
 
@@ -148,7 +148,7 @@ export default function ClienteDashboard() {
     <div className="space-y-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-gray-900">Area Riservata {client.nome_azienda}</h1>
+          <h1 className="text-3xl font-headline font-bold text-gray-900">Area Riservata {client?.nome_azienda}</h1>
           <p className="text-muted-foreground">Monitora il tuo piano editoriale strategico.</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
@@ -207,8 +207,8 @@ export default function ClienteDashboard() {
                 <div className="text-5xl font-bold text-gray-900 mt-1">{Math.max(0, postTotali - postUsati)} / {postTotali}</div>
               </div>
               <Progress value={usagePercent} className="h-2" />
-              {haPermesso('richiesta_upgrade') && !client.richiesta_upgrade && (
-                <Button variant="link" onClick={() => updateDoc(doc(db, 'clienti', clienteId), { richiesta_upgrade: true })} className="w-full text-indigo-600 font-bold">
+              {haPermesso('richiesta_upgrade') && client && !client.richiesta_upgrade && (
+                <Button variant="link" onClick={() => updateDoc(doc(db, 'clienti', clienteId!), { richiesta_upgrade: true })} className="w-full text-indigo-600 font-bold">
                   Richiedi Post Extra <ArrowUpRight className="w-4 h-4 ml-1" />
                 </Button>
               )}
@@ -233,12 +233,16 @@ export default function ClienteDashboard() {
             <div className="space-y-6">
               {postsOnSelectedDate.map((post: any) => {
                 const material = materials?.find(m => m.id === post.materiale_id);
+                const formattedDate = post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function'
+                  ? post.data_pubblicazione.toDate().toLocaleString()
+                  : 'Data non definita';
+                
                 return (
                   <Card key={post.id} className="rounded-xl border-gray-200 overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
                     <div className="p-4 flex items-center justify-between border-b">
                       <div className="flex items-center gap-3">
                         <Badge className={`${STATO_POST_COLORS[post.stato].bg} ${STATO_POST_COLORS[post.stato].text}`}>{STATO_POST_LABELS[post.stato]}</Badge>
-                        <span className="text-xs text-gray-400">{post.data_pubblicazione?.toDate().toLocaleString()}</span>
+                        <span className="text-xs text-gray-400">{formattedDate}</span>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setPostPerCommenti(post.id)} className="text-indigo-600"><MessageSquare className="w-4 h-4" /></Button>
                     </div>
@@ -291,7 +295,7 @@ export default function ClienteDashboard() {
         </div>
       </div>
 
-      {postPerCommenti && <CommentiSidebar clienteId={clienteId} postId={postPerCommenti} isOpen={!!postPerCommenti} onClose={() => setPostPerCommenti(null)} />}
+      {postPerCommenti && clienteId && <CommentiSidebar clienteId={clienteId} postId={postPerCommenti} isOpen={!!postPerCommenti} onClose={() => setPostPerCommenti(null)} />}
     </div>
   );
 }

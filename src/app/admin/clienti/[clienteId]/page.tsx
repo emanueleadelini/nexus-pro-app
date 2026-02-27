@@ -165,34 +165,40 @@ export default function ClienteDettaglio() {
             </TabsContent>
 
             <TabsContent value="list" className="space-y-4">
-               {posts?.map(post => (
-                 <Card key={post.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge className={`${STATO_POST_COLORS[post.stato].bg} ${STATO_POST_COLORS[post.stato].text} border-none`}>
-                          {STATO_POST_LABELS[post.stato]}
-                        </Badge>
-                        <span className="text-xs text-gray-400">Pianificato: {post.data_pubblicazione?.toDate().toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setPostPerCommenti(post.id)}><MessageSquare className="w-4 h-4"/></Button>
-                        <Button variant="ghost" size="icon" onClick={() => setPostDaModificare(post)}><Edit3 className="w-4 h-4"/></Button>
-                        <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deletePost(post.id)}><Trash2 className="w-4 h-4"/></Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <h4 className="font-bold mb-1">{post.titolo}</h4>
-                      <p className="text-sm text-gray-600 line-clamp-3">{post.testo}</p>
-                    </CardContent>
-                    <CardFooter className="bg-gray-50/50 p-3 flex justify-end gap-2">
-                       {TRANSIZIONI_PERMESSE[post.stato].map(next => (
-                         <Button key={next} size="sm" onClick={() => handleTransizione(post, next)} className={`h-8 text-[10px] font-bold uppercase ${STATO_POST_COLORS[next].bg} ${STATO_POST_COLORS[next].text} border-none`}>
-                           Sposta in {STATO_POST_LABELS[next]}
-                         </Button>
-                       ))}
-                    </CardFooter>
-                 </Card>
-               ))}
+               {posts?.map(post => {
+                 const formattedDate = post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function' 
+                   ? post.data_pubblicazione.toDate().toLocaleDateString() 
+                   : 'Non definita';
+                 
+                 return (
+                   <Card key={post.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge className={`${STATO_POST_COLORS[post.stato].bg} ${STATO_POST_COLORS[post.stato].text} border-none`}>
+                            {STATO_POST_LABELS[post.stato]}
+                          </Badge>
+                          <span className="text-xs text-gray-400">Pianificato: {formattedDate}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setPostPerCommenti(post.id)}><MessageSquare className="w-4 h-4"/></Button>
+                          <Button variant="ghost" size="icon" onClick={() => setPostDaModificare(post)}><Edit3 className="w-4 h-4"/></Button>
+                          <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deletePost(post.id)}><Trash2 className="w-4 h-4"/></Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <h4 className="font-bold mb-1">{post.titolo}</h4>
+                        <p className="text-sm text-gray-600 line-clamp-3">{post.testo}</p>
+                      </CardContent>
+                      <CardFooter className="bg-gray-50/50 p-3 flex justify-end gap-2">
+                         {TRANSIZIONI_PERMESSE[post.stato].map(next => (
+                           <Button key={next} size="sm" onClick={() => handleTransizione(post, next)} className={`h-8 text-[10px] font-bold uppercase ${STATO_POST_COLORS[next].bg} ${STATO_POST_COLORS[next].text} border-none`}>
+                             Sposta in {STATO_POST_LABELS[next]}
+                           </Button>
+                         ))}
+                      </CardFooter>
+                   </Card>
+                 );
+               })}
             </TabsContent>
 
             <TabsContent value="assets">
@@ -236,7 +242,7 @@ export default function ClienteDettaglio() {
             <CardContent className="pt-6 space-y-6">
               <div className="text-center bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Residui Mensili</span>
-                <div className="text-5xl font-bold font-headline mt-1">{client.post_totali - postUsati}</div>
+                <div className="text-5xl font-bold font-headline mt-1">{(client.post_totali || 0) - postUsati}</div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
