@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, UploadCloud, Edit3, Image as ImageIcon, Filter, PieChart, Info, AlertTriangle, Trash2, MessageSquare, Share2, Link as LinkIcon, ExternalLink, History } from 'lucide-react';
+import { CalendarDays, FolderOpen, Send, Clock, Sparkles, Plus, ChevronLeft, UploadCloud, Edit3, Image as ImageIcon, Filter, PieChart, Info, AlertTriangle, Trash2, MessageSquare, Share2, Link as LinkIcon, ExternalLink, History, LayoutGrid, List } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
 import { CreaPostManualeModal } from '@/components/admin/crea-post-manuale-modal';
@@ -28,6 +29,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { usePermessi } from '@/hooks/use-permessi';
 import { useUser } from '@/firebase';
+import { CalendarioVisuale } from '@/components/admin/calendario-visuale';
 
 const TRANSIZIONI_PERMESSE: Record<StatoPost, StatoPost[]> = {
   bozza: ["revisione_interna", "da_approvare"],
@@ -188,18 +190,26 @@ export default function ClienteDettaglio() {
             </div>
           )}
 
-          <Tabs defaultValue="calendar" className="w-full">
+          <Tabs defaultValue="visual" className="w-full">
             <TabsList className="bg-white border-b border-gray-200 p-0 h-12 w-full justify-start rounded-none mb-6 overflow-x-auto overflow-y-hidden">
+              <TabsTrigger value="visual" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
+                <LayoutGrid className="w-4 h-4 mr-2" /> Vista Griglia (Drag&Drop)
+              </TabsTrigger>
               <TabsTrigger value="calendar" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
-                <CalendarDays className="w-4 h-4 mr-2" /> Calendario Editoriale
+                <List className="w-4 h-4 mr-2" /> Elenco PED
               </TabsTrigger>
               <TabsTrigger value="materials_agency" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
                 <FolderOpen className="w-4 h-4 mr-2" /> Archivio Nexus
               </TabsTrigger>
-              <TabsTrigger value="materials_client" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 rounded-none h-full px-6 text-sm font-medium whitespace-nowrap">
-                <Plus className="w-4 h-4 mr-2" /> Asset dal Cliente
-              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="visual" className="pt-2">
+              {posts ? (
+                <CalendarioVisuale clienteId={clienteId} posts={posts} />
+              ) : (
+                <Skeleton className="h-96 w-full" />
+              )}
+            </TabsContent>
 
             <TabsContent value="calendar" className="space-y-6">
               <div className="flex flex-col lg:flex-row gap-8">
