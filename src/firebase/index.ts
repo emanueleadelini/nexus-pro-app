@@ -1,23 +1,26 @@
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 
 /**
  * Inizializza l'istanza Firebase per l'applicazione.
- * Forza SEMPRE l'uso di firebaseConfig per evitare che Firebase Studio
- * utilizzi automaticamente l'emulatore locale invece del Cloud di produzione.
+ * Forza l'uso di firebaseConfig per garantire che l'app si colleghi al progetto Cloud
+ * corretto e non all'emulatore locale predefinito di Firebase Studio.
  */
 export function initializeFirebase() {
   const apps = getApps();
   let firebaseApp: FirebaseApp;
 
   if (!apps.length) {
-    // Forza la configurazione Cloud
+    // Inizializzazione pulita con config esplicita
     firebaseApp = initializeApp(firebaseConfig);
   } else {
+    // Se l'app esiste già, la utilizziamo. 
+    // Nota: in caso di errori persistenti di permessi in Studio, 
+    // potrebbe essere necessario eliminare apps[0] e reinizializzare.
     firebaseApp = apps[0];
   }
 
