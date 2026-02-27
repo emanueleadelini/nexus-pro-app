@@ -14,12 +14,12 @@ export function initializeFirebase() {
   const apps = getApps();
   let firebaseApp: FirebaseApp;
 
+  // In Firebase Studio, initializeApp() potrebbe essere chiamato automaticamente.
+  // Forziamo l'uso della nostra configurazione esplicita.
   if (!apps.length) {
-    // Inizializzazione pulita con config esplicita
     firebaseApp = initializeApp(firebaseConfig);
   } else {
-    // Se l'app esiste già, la utilizziamo garantendo che sia l'istanza corretta.
-    firebaseApp = apps[0];
+    firebaseApp = getApp();
   }
 
   return getSdks(firebaseApp);

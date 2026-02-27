@@ -18,7 +18,8 @@ export function NotificheBell() {
   const router = useRouter();
 
   const notificationsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !db) return null;
+    // La query che fallisce: richiede un indice se orderBy è usato con where
     return query(
       collection(db, 'notifiche'),
       where('destinatario_uid', '==', user.uid),
@@ -36,15 +37,9 @@ export function NotificheBell() {
     }
 
     if (notification.riferimento_tipo === 'post') {
-      const basePath = user?.uid ? (await getRolePath(user.uid)) : '/login';
-      router.push(`${basePath}/clienti/${notification.cliente_id}?postId=${notification.riferimento_id}`);
+      router.push(`/admin/clienti/${notification.cliente_id}?postId=${notification.riferimento_id}`);
     }
   };
-
-  async function getRolePath(uid: string) {
-    // Semplice logica di routing basata sul ruolo salvato
-    return '/admin'; // Per semplicità in questo componente
-  }
 
   const getIcon = (tipo: TipoNotifica) => {
     switch (tipo) {
