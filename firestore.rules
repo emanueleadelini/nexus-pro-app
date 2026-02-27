@@ -2,7 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // ==========================================
     // HELPERS CORE
+    // ==========================================
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -19,9 +22,23 @@ service cloud.firestore {
       return isSignedIn() && (getUserData().ruolo == 'operatore' || getUserData().ruolo == 'super_admin');
     }
     
-    function isClientOf(clienteId) {
-      return isSignedIn() && getUserData().cliente_id == clienteId;
+    function isReferente(clienteId) {
+      let data = getUserData();
+      return isSignedIn() && data.ruolo == 'referente' && data.cliente_id == clienteId;
     }
+    
+    function isCollaboratore(clienteId) {
+      let data = getUserData();
+      return isSignedIn() && data.ruolo == 'collaboratore' && data.cliente_id == clienteId;
+    }
+    
+    function isClientOf(clienteId) {
+      return isReferente(clienteId) || isCollaboratore(clienteId);
+    }
+
+    // ==========================================
+    // REGOLE COLLEZIONI
+    // ==========================================
 
     // USERS: Solo admin vedono tutti, utente vede se stesso
     match /users/{uid} {
@@ -34,33 +51,66 @@ service cloud.firestore {
       allow read: if isSignedIn() && (isClientOf(clienteId) || isOperatore());
       allow write: if isSuperAdmin();
       
-      // POST: Sotto-collezione isolata
+      // POST: Sotto-collezione isolata con workflow
       match /post/{postId} {
-        allow read: if isSignedIn() && (isClientOf(clienteId) || isOperatore());
-        allow create: if isOperatore();
-        allow update: if isSignedIn() && (isOperatore() || isClientOf(clienteId));
+        // Lettura: Clienti non vedono bozze o revisioni interne
+        allow read: if isOperatore() 
+          || (isClientOf(clienteId) && resource.data.stato != 'bozza' && resource.data.stato != 'revisione_interna');
+        
+        // Creazione: Solo agenzia, verifica integrità dati
+        allow create: if isOperatore() 
+          && request.resource.data.cliente_id == clienteId
+          && request.resource.data.creato_il == request.time;
+        
+        // Update: Logica differenziata tra Agenzia e Cliente
+        allow update: if isOperatore() // Agenzia può modificare tutto
+          || (
+            isReferente(clienteId) // Il Referente può solo approvare/rifiutare
+            && resource.data.stato == 'da_approvare'
+            && request.resource.data.stato in ['approvato', 'revisione']
+            // Verifica che NON siano stati toccati campi sensibili (titolo, testo, immagini)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['stato', 'aggiornato_il', 'storico_stati'])
+          );
+        
         allow delete: if isSuperAdmin();
         
-        // COMMENTI: Interni ai post
+        // COMMENTI: Sempre accessibili per feedback
         match /commenti/{commentId} {
-          allow read, write: if isSignedIn() && (isClientOf(clienteId) || isOperatore());
+          allow read: if isClientOf(clienteId) || isOperatore();
+          allow create: if isClientOf(clienteId) || isOperatore();
+          allow update: if isOperatore() || (isSignedIn() && resource.data.autore_uid == request.auth.uid);
+          allow delete: if isOperatore();
         }
       }
       
       // MATERIALI: Archivio asset
       match /materiali/{materialId} {
-        allow read: if isSignedIn() && (isClientOf(clienteId) || isOperatore());
-        allow create: if isSignedIn() && (isClientOf(clienteId) || isOperatore());
-        allow update: if isOperatore() || (isClientOf(clienteId) && resource.data.caricato_da == request.auth.uid);
+        allow read: if isClientOf(clienteId) || isOperatore();
+        allow create: if isClientOf(clienteId) || isOperatore();
+        allow update: if isOperatore() 
+          || (isReferente(clienteId) && resource.data.caricato_da == request.auth.uid);
         allow delete: if isOperatore();
       }
     }
     
-    // NOTIFICHE: Solo destinatario o agenzia
+    // NOTIFICHE: Ottimizzate per list queries con filtri
     match /notifiche/{notificaId} {
-      allow read: if isSignedIn() && (resource.data.destinatario_uid == request.auth.uid || isOperatore());
+      // allow list richiede che la query abbia il filtro su destinatario_uid
+      allow list: if isSignedIn() && (
+        request.query.filters.destinatario_uid == request.auth.uid 
+        || isOperatore()
+      );
+      allow get: if isSignedIn() && (
+        resource.data.destinatario_uid == request.auth.uid 
+        || isOperatore()
+      );
+      
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.destinatario_uid == request.auth.uid || isOperatore());
+      allow update: if isSignedIn() && (
+        resource.data.destinatario_uid == request.auth.uid 
+        || isOperatore()
+      );
       allow delete: if isOperatore();
     }
   }
