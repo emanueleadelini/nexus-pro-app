@@ -1,7 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TEST NUCLEARE: Accesso libero per debug ambiente Studio/Cloud
+    // TEST NUCLEARE: Accesso libero per debug ambiente Studio/Cloud.
+    // Una volta risolto l'instradamento dell'emulatore, ripristineremo l'RBAC.
     match /{document=**} {
       allow read, write: if true;
     }

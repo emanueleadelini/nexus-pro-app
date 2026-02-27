@@ -7,18 +7,21 @@ import { getFirestore } from 'firebase/firestore'
 
 /**
  * Inizializza l'istanza Firebase per l'applicazione.
- * Forza l'uso di firebaseConfig per garantire la connessione al Cloud di produzione
- * ed evitare l'instradamento automatico verso l'emulatore locale di Firebase Studio.
+ * Forza SEMPRE l'uso di firebaseConfig per evitare che Firebase Studio
+ * utilizzi automaticamente l'emulatore locale invece del Cloud di produzione.
  */
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Utilizziamo SEMPRE la configurazione esplicita per garantire la connessione al Cloud.
-    const firebaseApp = initializeApp(firebaseConfig);
-    return getSdks(firebaseApp);
+  const apps = getApps();
+  let firebaseApp: FirebaseApp;
+
+  if (!apps.length) {
+    // Forza la configurazione Cloud
+    firebaseApp = initializeApp(firebaseConfig);
+  } else {
+    firebaseApp = apps[0];
   }
 
-  // Se già inizializzato, ritorna gli SDK esistenti
-  return getSdks(getApp());
+  return getSdks(firebaseApp);
 }
 
 /**
