@@ -66,6 +66,8 @@
         "tipo": { "type": "string" },
         "messaggio": { "type": "string" },
         "destinatario_uid": { "type": "string" },
+        "riferimento_tipo": { "type": "string", "enum": ["post", "materiale", "cliente", "commento"] },
+        "riferimento_id": { "type": "string" },
         "letta": { "type": "boolean" },
         "creato_il": { "type": "string", "format": "date-time" }
       }

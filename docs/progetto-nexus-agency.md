@@ -24,7 +24,7 @@ Il nuovo workflow è ottimizzato per evitare colli di bottiglia:
 
 ### 2.2 Feed Instagram Preview
 Il cliente non vede un elenco tecnico, ma una **simulazione reale del Feed Instagram**:
-- Avatar con logo aziendale.
+- Avatar con logo aziendale caricato dinamicamente.
 - Immagine in formato 1:1.
 - Pulsanti di interazione (Heart, Comment, Send) per simulazione.
 - Caption (titolo + testo) formattata come sui social.
@@ -48,7 +48,7 @@ Nexus Pro non è solo produzione, ma strategia master:
 Sistema di log persistente per ogni azione rilevante:
 - **Audit Log**: Storico completo di chi ha inviato cosa e quando.
 - **Badge Real-time**: Contatore di notifiche non lette nell'header.
-- **Deep Linking**: Cliccare su una notifica porta l'utente direttamente all'elemento interessato (es. al post specifico nel feed).
+- **Deep Linking**: Cliccare su una notifica porta l'utente direttamente all'elemento interessato (es. al post specifico nel feed) con scroll automatico ed evidenziazione.
 
 ---
 *Documento di Proprietà Intellettuale - Nexus Pro - 2024*
