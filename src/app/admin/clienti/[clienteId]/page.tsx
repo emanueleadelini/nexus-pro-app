@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   CalendarDays, 
   FolderOpen, 
@@ -28,7 +30,12 @@ import {
   Download, 
   Plus,
   Loader2,
-  History
+  History,
+  ShieldCheck,
+  Briefcase,
+  PieChart,
+  FileText,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
@@ -83,6 +90,7 @@ export default function ClienteDettaglio() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [postDaModificare, setPostDaModificare] = useState<Post | null>(null);
   const [postPerCommenti, setPostPerCommenti] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState('');
 
   const clientDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -101,6 +109,17 @@ export default function ClienteDettaglio() {
     return query(collection(db, 'clienti', clienteId, 'materiali'), orderBy('creato_il', 'desc'));
   }, [db, clienteId, user]);
   const { data: materials, isLoading: isMaterialsLoading } = useCollection<Material>(materialsQuery);
+
+  const handleUpdateLogo = async () => {
+    if (!logoUrl) return;
+    try {
+      await updateDoc(doc(db, 'clienti', clienteId), { logo_url: logoUrl });
+      toast({ title: "Logo aggiornato" });
+      setLogoUrl('');
+    } catch (e) {
+      toast({ variant: 'destructive', title: "Errore aggiornamento logo" });
+    }
+  };
 
   const handleTransizione = (post: Post, nuovoStato: StatoPost) => {
     if (!user) return;
@@ -185,16 +204,27 @@ export default function ClienteDettaglio() {
   if (!client) return <div className="p-8 text-center">Cliente non trovato.</div>;
 
   const usagePercent = (client.post_usati / (client.post_totali || 1)) * 100;
+  
+  const strategicDocs = materials?.filter(m => m.destinazione === 'strategico') || [];
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <Link href="/admin" className="text-indigo-600 hover:underline text-sm flex items-center gap-1 mb-2">
-            <ChevronLeft className="w-4 h-4"/> Elenco Clienti
-          </Link>
-          <h1 className="text-4xl font-headline font-bold">{client.nome_azienda}</h1>
-          <p className="text-muted-foreground">{client.settore}</p>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 overflow-hidden flex items-center justify-center">
+            {client.logo_url ? (
+               <img src={client.logo_url} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+               <Briefcase className="w-8 h-8 text-indigo-200" />
+            )}
+          </div>
+          <div>
+            <Link href="/admin" className="text-indigo-600 hover:underline text-sm flex items-center gap-1 mb-1">
+              <ChevronLeft className="w-4 h-4"/> Elenco Clienti
+            </Link>
+            <h1 className="text-4xl font-headline font-bold">{client.nome_azienda}</h1>
+            <p className="text-muted-foreground">{client.settore}</p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setIsCreaManualeOpen(true)} className="border-indigo-600 text-indigo-700">
@@ -212,14 +242,17 @@ export default function ClienteDettaglio() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 space-y-8">
           <Tabs defaultValue="visual">
-            <TabsList className="bg-transparent border-b rounded-none h-12 w-full justify-start p-0 mb-6">
-              <TabsTrigger value="visual" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6">
+            <TabsList className="bg-transparent border-b rounded-none h-12 w-full justify-start p-0 mb-6 overflow-x-auto overflow-y-hidden">
+              <TabsTrigger value="visual" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6 whitespace-nowrap">
                 <LayoutGrid className="w-4 h-4 mr-2"/> Calendario Visuale
               </TabsTrigger>
-              <TabsTrigger value="list" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6">
+              <TabsTrigger value="list" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6 whitespace-nowrap">
                 <List className="w-4 h-4 mr-2"/> Elenco Post
               </TabsTrigger>
-              <TabsTrigger value="assets" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6">
+              <TabsTrigger value="strategic" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6 whitespace-nowrap">
+                <ShieldCheck className="w-4 h-4 mr-2"/> Area Strategica
+              </TabsTrigger>
+              <TabsTrigger value="assets" className="data-[state=active]:border-b-2 border-indigo-600 rounded-none h-full px-6 whitespace-nowrap">
                 <FolderOpen className="w-4 h-4 mr-2"/> Archivio Asset 
               </TabsTrigger>
             </TabsList>
@@ -270,10 +303,51 @@ export default function ClienteDettaglio() {
                })}
             </TabsContent>
 
+            <TabsContent value="strategic" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { id: 'piano_strategico', label: 'Piano Strategico', icon: ShieldCheck, color: 'text-indigo-600' },
+                  { id: 'piano_comunicazione', label: 'Piano Comunicazione', icon: FileText, color: 'text-blue-600' },
+                  { id: 'business_plan', label: 'Business Plan', icon: Briefcase, color: 'text-emerald-600', restricted: !client.include_business_plan },
+                  { id: 'business_model', label: 'Business Model', icon: PieChart, color: 'text-violet-600', restricted: !client.include_business_model },
+                ].map(type => {
+                  const doc = strategicDocs.find(d => d.tipo_strategico === type.id);
+                  return (
+                    <Card key={type.id} className={`relative overflow-hidden ${type.restricted ? 'opacity-50 grayscale' : ''}`}>
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex justify-between items-start">
+                          <div className={`p-2 rounded-lg bg-gray-50 ${type.color}`}>
+                            <type.icon className="w-5 h-5" />
+                          </div>
+                          {type.restricted && <Badge variant="destructive" className="text-[8px] uppercase">Non Incluso</Badge>}
+                        </div>
+                        <CardTitle className="text-sm font-bold mt-2">{type.label}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        {doc ? (
+                          <div className="flex items-center justify-between text-xs mt-2 p-2 bg-indigo-50 rounded-lg">
+                            <span className="truncate flex-1 mr-2">{doc.nome_file}</span>
+                            <Badge className="bg-green-100 text-green-800 text-[8px]">Caricato</Badge>
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-gray-400 italic mt-2">Nessun documento caricato</div>
+                        )}
+                      </CardContent>
+                      <CardFooter className="p-3 bg-gray-50/50 flex justify-end gap-2 border-t">
+                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold" onClick={() => setIsUploadOpen(true)}>
+                          {doc ? 'SOSTITUISCI' : 'CARICA'}
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
             <TabsContent value="assets">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {materials?.map(mat => {
-                  const type = getFileTypeInfo(mat.nome_file, !!mat.link_esterno);
+                  const type = getFileTypeInfo(mat.nome_file, !!mat.link_esterno, mat.destinazione);
                   return (
                     <Card key={mat.id} className="overflow-hidden group">
                       <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center relative">
@@ -313,17 +387,30 @@ export default function ClienteDettaglio() {
                 </div>
                 <Progress value={usagePercent} className={`h-2 ${usagePercent > 80 ? '[&>div]:bg-red-500' : '[&>div]:bg-indigo-600'}`} />
               </div>
-              <Button variant="outline" className="w-full text-indigo-600 border-indigo-200" onClick={() => setIsPianoOpen(true)}>Gestisci Crediti</Button>
+              <Button variant="outline" className="w-full text-indigo-600 border-indigo-200" onClick={() => setIsPianoOpen(true)}>Gestisci Piano</Button>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-sm border-gray-100 bg-white">
             <CardHeader>
               <CardTitle className="text-sm font-bold uppercase tracking-widest text-gray-900 flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4" /> Gestione Account
+                <ShieldAlert className="w-4 h-4" /> Gestione Branding & Account
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <Label className="text-[10px] font-bold uppercase text-gray-400">URL Logo Aziendale</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={logoUrl} 
+                    onChange={(e) => setLogoUrl(e.target.value)} 
+                    placeholder="https://..." 
+                    className="h-8 text-xs bg-white"
+                  />
+                  <Button size="sm" className="h-8 text-[10px] font-bold" onClick={handleUpdateLogo}>OK</Button>
+                </div>
+              </div>
+
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-3">
                 <Button 
                   variant="outline" size="sm" className="w-full border-gray-200 text-gray-700 h-9 font-bold text-[11px]"
@@ -371,9 +458,16 @@ export default function ClienteDettaglio() {
       <GeneraBozzaModal isOpen={isGeneraOpen} onClose={() => setIsGeneraOpen(false)} clienteId={clienteId} clienteNome={client.nome_azienda} clienteSettore={client.settore || ''} />
       <CreaPostManualeModal isOpen={isCreaManualeOpen} onClose={() => setIsCreaManualeOpen(false)} clienteId={clienteId} />
       <ModificaPostModal isOpen={!!postDaModificare} onClose={() => setPostDaModificare(null)} clienteId={clienteId} post={postDaModificare} />
-      <ModificaPianoModal isOpen={isPianoOpen} onClose={() => setIsPianoOpen(false)} clienteId={clienteId} postTotaliAttuali={client.post_totali} />
+      <ModificaPianoModal 
+        isOpen={isPianoOpen} 
+        onClose={() => setIsPianoOpen(false)} 
+        clienteId={clienteId} 
+        postTotaliAttuali={client.post_totali}
+        includeBP={client.include_business_plan}
+        includeBM={client.include_business_model}
+      />
       <CaricaMaterialeModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} clienteId={clienteId} />
-      {postPerCommenti && <CommentiSidebar clienteId={clienteId} postId={postPerCommenti} isOpen={!!postPerCommenti} onClose={() => setPostPerCommenti(null)} />}
+      {postPerCommenti && clienteId && <CommentiSidebar clienteId={clienteId} postId={postPerCommenti} isOpen={!!postPerCommenti} onClose={() => setPostPerCommenti(null)} />}
     </div>
   );
 }

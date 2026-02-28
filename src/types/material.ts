@@ -1,9 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
-import { FileText, Image as ImageIcon, Video, Camera, Share2, Globe, Printer, Link as LinkIcon } from 'lucide-react';
+import { FileText, Image as ImageIcon, Video, Camera, Share2, Globe, Printer, Link as LinkIcon, ShieldCheck, PieChart, Briefcase } from 'lucide-react';
 
 export type StatoValidazione = 'in_attesa' | 'validato' | 'rifiutato';
-export type DestinazioneAsset = 'social' | 'sito' | 'offline';
-export type TipoAsset = 'grafica' | 'foto' | 'video' | 'documento' | 'link';
+export type DestinazioneAsset = 'social' | 'sito' | 'offline' | 'strategico';
+export type TipoAsset = 'grafica' | 'foto' | 'video' | 'documento' | 'link' | 'strategia';
 
 export const STATO_VALIDAZIONE_LABELS: Record<StatoValidazione, string> = {
   in_attesa: 'In attesa',
@@ -21,28 +21,34 @@ export const DESTINAZIONE_LABELS: Record<DestinazioneAsset, string> = {
   social: 'Social Media',
   sito: 'Sito Web',
   offline: 'Grafica Offline',
+  strategico: 'Documento Strategico',
 };
 
 export const DESTINAZIONE_ICONS: Record<DestinazioneAsset, any> = {
   social: Share2,
   sito: Globe,
   offline: Printer,
+  strategico: ShieldCheck,
 };
 
 export interface Material {
   id: string;
   nome_file: string;
   url_storage: string | null;
-  link_esterno?: string | null; // Per video > 100MB o link WeTransfer
-  caricato_da: string; // UID utente
-  ruolo_caricatore: 'admin' | 'cliente'; // Per separazione archivio
+  link_esterno?: string | null;
+  caricato_da: string;
+  ruolo_caricatore: 'admin' | 'cliente';
   stato_validazione: StatoValidazione;
   destinazione: DestinazioneAsset; 
+  tipo_strategico?: 'piano_strategico' | 'piano_comunicazione' | 'business_plan' | 'business_model';
   note_rifiuto: string | null;
   creato_il: Timestamp;
 }
 
-export function getFileTypeInfo(fileName: string, isLink?: boolean) {
+export function getFileTypeInfo(fileName: string, isLink?: boolean, destinazione?: DestinazioneAsset) {
+  if (destinazione === 'strategico') {
+     return { type: 'strategia' as TipoAsset, label: 'Strategia', icon: ShieldCheck, color: 'text-indigo-600', bg: 'bg-indigo-50' };
+  }
   if (isLink) {
     return { type: 'link' as TipoAsset, label: 'Link Esterno', icon: LinkIcon, color: 'text-blue-600', bg: 'bg-blue-50' };
   }

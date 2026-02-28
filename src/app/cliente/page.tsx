@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
@@ -31,7 +30,11 @@ import {
   MessageCircle,
   Send,
   Bookmark,
-  MoreHorizontal
+  MoreHorizontal,
+  ShieldCheck,
+  Briefcase,
+  FileText,
+  Download
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -167,16 +170,26 @@ export default function ClienteDashboard() {
   }) || [];
 
   const daysWithPosts = posts?.filter((p: any) => p.data_pubblicazione && typeof p.data_pubblicazione.toDate === 'function').map((p: any) => p.data_pubblicazione.toDate().toDateString()) || [];
-
-  // Placeholder images for posts
-  const postPlaceholders = PlaceHolderImages.filter(img => img.id.startsWith('post-'));
+  
+  const strategicDocs = materials?.filter(m => m.destinazione === 'strategico' && m.stato_validazione === 'validato') || [];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-headline font-bold text-gray-900">Area Riservata {client?.nome_azienda}</h1>
-          <p className="text-muted-foreground">Monitora il tuo piano editoriale strategico.</p>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden flex items-center justify-center p-2">
+            {client.logo_url ? (
+              <img src={client.logo_url} alt="Logo Azienda" className="w-full h-full object-contain" />
+            ) : (
+              <Avatar className="h-full w-full rounded-none">
+                <AvatarFallback className="bg-indigo-600 text-white font-bold">{client.nome_azienda?.charAt(0)}</AvatarFallback>
+              </Avatar>
+            )}
+          </div>
+          <div>
+            <h1 className="text-3xl font-headline font-bold text-gray-900">Area Riservata {client?.nome_azienda}</h1>
+            <p className="text-muted-foreground">Monitora il tuo piano editoriale strategico.</p>
+          </div>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           {haPermesso('upload_materiali') && (
@@ -195,7 +208,7 @@ export default function ClienteDashboard() {
                         <TabsTrigger value="link">Link Esterno</TabsTrigger>
                       </TabsList>
                       <TabsContent value="file" className="pt-4 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50" onClick={() => fileInputRef.current?.click()}>
-                        <input type="file" ref={fileInputRef} onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} className="hidden" multiple />
+                        <input type="file" fileInputRef={fileInputRef} onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} className="hidden" multiple />
                         <ImageIcon className="w-8 h-8 mx-auto text-gray-300 mb-2"/>
                         <p className="text-xs text-gray-400">{selectedFiles.length > 0 ? `${selectedFiles.length} file pronti` : "Trascina o clicca (Max 50MB)"}</p>
                       </TabsContent>
@@ -242,6 +255,40 @@ export default function ClienteDashboard() {
             </CardContent>
           </Card>
 
+          <Card className="rounded-xl shadow-md overflow-hidden border-gray-100">
+            <CardHeader className="bg-gray-900 text-white">
+               <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Area Strategica</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+               <div className="divide-y divide-gray-100">
+                  {[
+                    { id: 'piano_strategico', label: 'Piano Strategico', icon: ShieldCheck, color: 'text-indigo-600' },
+                    { id: 'piano_comunicazione', label: 'Piano Comunicazione', icon: FileText, color: 'text-blue-600' },
+                    { id: 'business_plan', label: 'Business Plan', icon: Briefcase, color: 'text-emerald-600', restricted: !client.include_business_plan },
+                    { id: 'business_model', label: 'Business Model', icon: PieChart, color: 'text-violet-600', restricted: !client.include_business_model },
+                  ].map(type => {
+                    const doc = strategicDocs.find(d => d.tipo_strategico === type.id);
+                    return (
+                      <div key={type.id} className={`p-4 flex items-center justify-between group ${type.restricted ? 'opacity-30' : 'hover:bg-gray-50'}`}>
+                        <div className="flex items-center gap-3">
+                          <type.icon className={`w-5 h-5 ${type.color}`} />
+                          <div>
+                             <p className="text-xs font-bold leading-none">{type.label}</p>
+                             <p className="text-[9px] text-gray-400 uppercase mt-1">{doc ? 'Disponibile' : type.restricted ? 'Non nel pacchetto' : 'In lavorazione'}</p>
+                          </div>
+                        </div>
+                        {doc && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" asChild>
+                             <a href={doc.link_esterno || '#'} target="_blank" rel="noreferrer"><Download className="w-4 h-4" /></a>
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+               </div>
+            </CardContent>
+          </Card>
+
           <Card className="p-4 rounded-xl border-gray-200">
             <Calendar
               mode="single"
@@ -264,20 +311,15 @@ export default function ClienteDashboard() {
                   ? post.data_pubblicazione.toDate().toLocaleString('it-IT', { day: 'numeric', month: 'long' })
                   : 'Prossimamente';
                 
-                // Determinazione dell'immagine da mostrare
-                const placeholder = postPlaceholders[index % postPlaceholders.length];
+                const placeholder = PlaceHolderImages.filter(img => img.id.startsWith('post-'))[index % 3];
                 const imageSrc = material?.url_storage || placeholder?.imageUrl;
 
                 return (
                   <Card key={post.id} className="rounded-xl border-gray-200 overflow-hidden bg-white shadow-sm border-none sm:border">
-                    {/* Header Post */}
                     <div className="p-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 border">
-                          <AvatarImage src={PlaceHolderImages.find(img => img.id === 'client-avatar-1')?.imageUrl} />
-                          <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold text-[10px] uppercase">
-                            {client?.nome_azienda?.charAt(0)}
-                          </AvatarFallback>
+                          {client.logo_url ? <AvatarImage src={client.logo_url} /> : <AvatarFallback>{client.nome_azienda?.charAt(0)}</AvatarFallback>}
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="text-[12px] font-bold leading-none">{client?.nome_azienda}</span>
@@ -289,16 +331,9 @@ export default function ClienteDashboard() {
                       </Badge>
                     </div>
 
-                    {/* Media Post */}
                     <div className="aspect-square bg-gray-50 relative group">
                       {imageSrc ? (
-                        <Image 
-                          src={imageSrc} 
-                          alt={post.titolo} 
-                          fill 
-                          className="object-cover"
-                          data-ai-hint={placeholder?.imageHint || "social post image"}
-                        />
+                        <Image src={imageSrc} alt={post.titolo} fill className="object-cover" />
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-gray-300">
                           <ImageIcon className="w-12 h-12 mb-2"/>
@@ -307,7 +342,6 @@ export default function ClienteDashboard() {
                       )}
                     </div>
 
-                    {/* Actions Post */}
                     <div className="p-3">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
@@ -318,7 +352,6 @@ export default function ClienteDashboard() {
                         <Bookmark className="w-6 h-6" />
                       </div>
 
-                      {/* Content Post */}
                       <div className="space-y-2">
                         <p className="text-sm font-bold">{client?.nome_azienda} <span className="font-normal ml-1">{post.titolo}</span></p>
                         <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{post.testo}</p>
@@ -326,7 +359,6 @@ export default function ClienteDashboard() {
                       </div>
                     </div>
 
-                    {/* Footer / CTA Approvazione */}
                     {haPermesso('approvazione_post') && post.stato === 'da_approvare' && (
                       <CardFooter className="p-3 bg-gray-50/50 border-t flex gap-2">
                         <Button variant="outline" size="sm" className="flex-1 text-red-600 border-red-100 hover:bg-red-50 font-bold h-9" onClick={() => handleApprovazione(post.id, false)}>
@@ -346,25 +378,6 @@ export default function ClienteDashboard() {
               <p className="text-gray-400 italic">Nessun post previsto per questa data.</p>
             </div>
           )}
-
-          <div className="pt-8">
-             <h2 className="text-xl font-headline font-bold mb-4">I Tuoi Asset Recenti</h2>
-             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {materials?.slice(0, 6).map(mat => (
-                  <Card key={mat.id} className="p-3 flex items-center gap-3">
-                    <div className="p-2 bg-indigo-50 rounded">
-                      <FolderOpen className="w-4 h-4 text-indigo-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate">{mat.nome_file}</p>
-                      <Badge className={`${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].bg} ${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].text} text-[8px]`}>
-                        {STATO_VALIDAZIONE_LABELS[mat.stato_validazione]}
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-             </div>
-          </div>
         </div>
       </div>
 

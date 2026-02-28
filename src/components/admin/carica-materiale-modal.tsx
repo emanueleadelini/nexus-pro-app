@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UploadCloud, FileIcon, X, Link as LinkIcon, Plus, AlertCircle } from 'lucide-react';
+import { Loader2, UploadCloud, FileIcon, X, Link as LinkIcon, Plus, AlertCircle, ShieldCheck } from 'lucide-react';
 import { DestinazioneAsset } from '@/types/material';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -27,6 +27,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [externalLink, setExternalLink] = useState('');
   const [destinazione, setDestinazione] = useState<DestinazioneAsset>('social');
+  const [tipoStrategico, setTipoStrategico] = useState<string>('piano_strategico');
   const [uploadType, setUploadType] = useState<'file' | 'link'>('file');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const db = useFirestore();
@@ -43,7 +44,6 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
           title: 'File troppo grande',
           description: `Uno o più file superano il limite di 50MB. Per favore, usa l'opzione "Link" per questi file.`,
         });
-        // Filtriamo i file validi
         const validFiles = files.filter(f => f.size <= MAX_FILE_SIZE);
         setSelectedFiles(prev => [...prev, ...validFiles]);
       } else {
@@ -81,6 +81,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
             caricato_da: user.uid,
             ruolo_caricatore: 'admin',
             destinazione: destinazione,
+            tipo_strategico: destinazione === 'strategico' ? tipoStrategico : null,
             stato_validazione: 'validato',
             note_rifiuto: null,
             creato_il: serverTimestamp()
@@ -89,19 +90,20 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
         await Promise.all(uploadPromises);
       } else {
         await addDoc(matColRef, {
-          nome_file: 'Link Esterno (Video/File Pesante)',
+          nome_file: destinazione === 'strategico' ? `Link Documento Strategico` : 'Link Esterno',
           url_storage: null,
           link_esterno: externalLink,
           caricato_da: user.uid,
           ruolo_caricatore: 'admin',
           destinazione: destinazione,
+          tipo_strategico: destinazione === 'strategico' ? tipoStrategico : null,
           stato_validazione: 'validato',
           note_rifiuto: null,
           creato_il: serverTimestamp()
         });
       }
 
-      toast({ title: 'Materiale caricato!', description: 'Gli asset sono stati aggiunti all\'archivio AD next lab.' });
+      toast({ title: 'Materiale caricato!', description: 'Gli asset sono stati aggiunti all\'archivio.' });
       resetForm();
       onClose();
     } catch (error) {
@@ -124,14 +126,14 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">Invia Materiale al Cliente</DialogTitle>
-          <DialogDescription>Puoi inviare file multipli (max 50MB cad.) o link per file pesanti.</DialogDescription>
+          <DialogDescription>Carica asset creativi o documenti strategici master.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSave} className="space-y-6 py-4">
           <Tabs value={uploadType} onValueChange={(v: any) => setUploadType(v)}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="file">File (Immagini/Video)</TabsTrigger>
-              <TabsTrigger value="link">Link (WeTransfer/Drive)</TabsTrigger>
+              <TabsTrigger value="file">File Locale</TabsTrigger>
+              <TabsTrigger value="link">Link Esterno</TabsTrigger>
             </TabsList>
 
             <TabsContent value="file" className="space-y-4 pt-4">
@@ -159,7 +161,7 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
                     <UploadCloud className="w-10 h-10 text-gray-300" />
                     <div className="text-center space-y-1">
                       <p className="text-sm font-medium text-gray-600">Trascina o clicca per caricare</p>
-                      <p className="text-[10px] text-gray-400">Limite 50MB per file. Per file più grandi usa "Link".</p>
+                      <p className="text-[10px] text-gray-400">Limite 50MB per file.</p>
                     </div>
                   </>
                 )}
@@ -168,31 +170,47 @@ export function CaricaMaterialeModal({ isOpen, onClose, clienteId }: Props) {
 
             <TabsContent value="link" className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="link">URL del File Pesante</Label>
+                <Label htmlFor="link">URL del File</Label>
                 <div className="relative">
                   <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                  <Input id="link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://we.tl/..." className="pl-10" />
-                </div>
-                <div className="flex items-start gap-2 bg-indigo-50 p-2 rounded border border-indigo-100">
-                  <AlertCircle className="w-3.5 h-3.5 text-indigo-600 mt-0.5 shrink-0" />
-                  <p className="text-[10px] text-indigo-700 leading-tight">Usa questa opzione per video &gt; 50MB o cartelle Drive/Dropbox per non sovraccaricare la piattaforma.</p>
+                  <Input id="link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://..." className="pl-10" />
                 </div>
               </div>
             </TabsContent>
           </Tabs>
 
-          <div className="space-y-2">
-            <Label>Destinazione d'uso</Label>
-            <Select value={destinazione} onValueChange={(val: DestinazioneAsset) => setDestinazione(val)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleziona destinazione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="social">📱 Social Media</SelectItem>
-                <SelectItem value="sito">🌐 Sito Web</SelectItem>
-                <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>Destinazione d'uso</Label>
+              <Select value={destinazione} onValueChange={(val: DestinazioneAsset) => setDestinazione(val)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="social">📱 Social Media</SelectItem>
+                  <SelectItem value="sito">🌐 Sito Web</SelectItem>
+                  <SelectItem value="offline">🖨️ Grafiche Offline</SelectItem>
+                  <SelectItem value="strategico">🛡️ Documentazione Strategica</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {destinazione === 'strategico' && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                <Label>Tipo di Documento Strategico</Label>
+                <Select value={tipoStrategico} onValueChange={setTipoStrategico}>
+                  <SelectTrigger className="w-full border-indigo-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="piano_strategico">🎯 Piano Strategico Master</SelectItem>
+                    <SelectItem value="piano_comunicazione">📣 Piano di Comunicazione</SelectItem>
+                    <SelectItem value="business_plan">💼 Business Plan</SelectItem>
+                    <SelectItem value="business_model">🧱 Business Model Canvas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="pt-2">

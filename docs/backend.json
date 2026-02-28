@@ -15,6 +15,21 @@
         "creatoIl": { "type": "string", "format": "date-time" }
       }
     },
+    "Client": {
+      "title": "Client",
+      "type": "object",
+      "properties": {
+        "nome_azienda": { "type": "string" },
+        "settore": { "type": "string" },
+        "logo_url": { "type": "string" },
+        "post_totali": { "type": "number" },
+        "post_usati": { "type": "number" },
+        "include_business_plan": { "type": "boolean" },
+        "include_business_model": { "type": "boolean" },
+        "richiesta_upgrade": { "type": "boolean" },
+        "creato_il": { "type": "string", "format": "date-time" }
+      }
+    },
     "Notifica": {
       "title": "Notifica",
       "type": "object",
@@ -44,6 +59,13 @@
         "definition": {
           "entityName": "Notifica",
           "description": "User-specific notifications for real-time alerts."
+        }
+      },
+      {
+        "path": "/clienti/{clienteId}",
+        "definition": {
+          "entityName": "Client",
+          "description": "Main tenant/client data including logos and package flags."
         }
       }
     ]
