@@ -26,7 +26,7 @@ import {
   ShieldAlert, 
   KeyRound, 
   Download, 
-  AlertTriangle,
+  Plus,
   Loader2,
   History
 } from 'lucide-react';
@@ -75,6 +75,7 @@ export default function ClienteDettaglio() {
   const { haPermesso } = usePermessi();
 
   const [isGeneraOpen, setIsGeneraOpen] = useState(false);
+  const [isCreaManualeOpen, setIsCreaManualeOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPianoOpen, setIsPianoOpen] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
@@ -133,7 +134,6 @@ export default function ClienteDettaglio() {
   const deletePost = (post: Post) => {
     if (!window.confirm("Eliminare definitivamente e riaccreditare?")) return;
     deleteDoc(doc(db, 'clienti', clienteId, 'post', post.id));
-    // RIACCREDITO: Sottraiamo solo se non era ancora pubblicato
     if (post.stato !== 'pubblicato') {
       updateDoc(doc(db, 'clienti', clienteId), { post_usati: increment(-1) });
     }
@@ -183,7 +183,7 @@ export default function ClienteDettaglio() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-end gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <Link href="/admin" className="text-indigo-600 hover:underline text-sm flex items-center gap-1 mb-2">
             <ChevronLeft className="w-4 h-4"/> Elenco Clienti
@@ -191,12 +191,15 @@ export default function ClienteDettaglio() {
           <h1 className="text-4xl font-headline font-bold">{client.nome_azienda}</h1>
           <p className="text-muted-foreground">{client.settore}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setIsCreaManualeOpen(true)} className="border-indigo-600 text-indigo-700">
+            <Plus className="w-4 h-4 mr-2"/> Nuovo Post
+          </Button>
           <Button variant="outline" onClick={() => setIsUploadOpen(true)} className="border-indigo-200 text-indigo-700">
             <UploadCloud className="w-4 h-4 mr-2"/> Carica Asset
           </Button>
           <Button onClick={() => setIsGeneraOpen(true)} className="bg-violet-600 hover:bg-violet-700 shadow-lg">
-            <Sparkles className="w-4 h-4 mr-2"/> Genera Post AI
+            <Sparkles className="w-4 h-4 mr-2"/> Genera AI
           </Button>
         </div>
       </div>
@@ -217,7 +220,7 @@ export default function ClienteDettaglio() {
             </TabsList>
 
             <TabsContent value="visual">
-              {posts && <CalendarioVisuale clienteId={clienteId} posts={posts} />}
+              {posts && <CalendarioVisuale clienteId={clienteId} posts={posts} onAddPost={() => setIsCreaManualeOpen(true)} />}
             </TabsContent>
 
             <TabsContent value="list" className="space-y-4">
@@ -359,6 +362,7 @@ export default function ClienteDettaglio() {
       </div>
 
       <GeneraBozzaModal isOpen={isGeneraOpen} onClose={() => setIsGeneraOpen(false)} clienteId={clienteId} clienteNome={client.nome_azienda} clienteSettore={client.settore || ''} />
+      <CreaPostManualeModal isOpen={isCreaManualeOpen} onClose={() => setIsCreaManualeOpen(false)} clienteId={clienteId} />
       <ModificaPostModal isOpen={!!postDaModificare} onClose={() => setPostDaModificare(null)} clienteId={clienteId} post={postDaModificare} />
       <ModificaPianoModal isOpen={isPianoOpen} onClose={() => setIsPianoOpen(false)} clienteId={clienteId} postTotaliAttuali={client.post_totali} />
       <CaricaMaterialeModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} clienteId={clienteId} />

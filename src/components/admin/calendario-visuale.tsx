@@ -36,7 +36,7 @@ import { it } from 'date-fns/locale';
 import { Post, STATO_POST_COLORS, STATO_POST_LABELS, PIATTAFORMA_LABELS } from '@/types/post';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, GripVertical, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, Calendar as CalendarIcon, Clock, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { doc, updateDoc, serverTimestamp, Timestamp, arrayUnion } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
@@ -47,6 +47,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Props {
   clienteId: string;
   posts: Post[];
+  onAddPost?: () => void;
 }
 
 // Componente per il singolo post trascinabile nella griglia
@@ -95,13 +96,13 @@ function CalendarDayCell({ date, posts }: { date: Date; posts: Post[] }) {
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[100px] border-r border-b p-1 transition-colors flex flex-col ${isOver ? 'bg-indigo-50/50' : ''} ${isToday ? 'bg-gray-50/30' : ''}`}
+      className={`min-h-[120px] border-r border-b p-1 transition-colors flex flex-col ${isOver ? 'bg-indigo-50/50' : ''} ${isToday ? 'bg-gray-50/30' : ''}`}
     >
       <div className={`text-[10px] font-bold mb-1 ml-1 flex justify-between items-center ${isToday ? 'text-indigo-600' : 'text-gray-400'}`}>
         <span>{format(date, 'd')}</span>
         {isToday && <span className="h-1.5 w-1.5 rounded-full bg-indigo-600"></span>}
       </div>
-      <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar max-h-[80px]">
+      <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar max-h-[100px]">
         {posts.map(post => (
           <DraggablePostCard key={post.id} post={post} />
         ))}
@@ -110,7 +111,7 @@ function CalendarDayCell({ date, posts }: { date: Date; posts: Post[] }) {
   );
 }
 
-export function CalendarioVisuale({ clienteId, posts }: Props) {
+export function CalendarioVisuale({ clienteId, posts, onAddPost }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeId, setActiveId] = useState<string | null>(null);
   const db = useFirestore();
@@ -147,11 +148,9 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
       const post = posts.find(p => p.id === active.id);
       if (!post || !user) return;
 
-      // Se over.id è una data (formato yyyy-MM-dd)
       const targetDateStr = over.id as string;
       const targetDate = new Date(targetDateStr);
       
-      // Mantieni l'ora originale se possibile, altrimenti usa 10:00
       let originalDate = new Date();
       if (post.data_pubblicazione && typeof post.data_pubblicazione.toDate === 'function') {
         originalDate = post.data_pubblicazione.toDate();
@@ -162,7 +161,6 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
 
       const postRef = doc(db, 'clienti', clienteId, 'post', post.id);
 
-      // Aggiornamento ottimistico non-blocking
       updateDoc(postRef, {
         data_pubblicazione: Timestamp.fromDate(targetDate),
         aggiornato_il: serverTimestamp(),
@@ -191,9 +189,9 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-headline font-bold capitalize">
+          <h2 className="text-xl font-headline font-bold capitalize min-w-[150px]">
             {format(currentDate, 'MMMM yyyy', { locale: it })}
           </h2>
           <div className="flex gap-1">
@@ -202,13 +200,20 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
             <Button variant="outline" size="sm" className="h-8 text-xs px-3 ml-2" onClick={() => setCurrentDate(new Date())}>Oggi</Button>
           </div>
         </div>
-        <div className="flex gap-4">
-           {['bozza', 'da_approvare', 'approvato', 'pubblicato'].map(s => (
-             <div key={s} className="flex items-center gap-1.5">
-               <div className={`h-2 w-2 rounded-full ${STATO_POST_COLORS[s as any]?.bg?.replace('bg-', 'bg-') || 'bg-gray-300'}`}></div>
-               <span className="text-[10px] font-bold text-gray-400 uppercase">{STATO_POST_LABELS[s as any]}</span>
-             </div>
-           ))}
+        <div className="flex flex-wrap gap-2 items-center">
+           <div className="flex gap-3 mr-4">
+             {['bozza', 'da_approvare', 'approvato', 'pubblicato'].map(s => (
+               <div key={s} className="flex items-center gap-1.5">
+                 <div className={`h-2 w-2 rounded-full ${STATO_POST_COLORS[s as any]?.bg?.replace('bg-', 'bg-') || 'bg-gray-300'}`}></div>
+                 <span className="text-[10px] font-bold text-gray-400 uppercase">{STATO_POST_LABELS[s as any]}</span>
+               </div>
+             ))}
+           </div>
+           {onAddPost && (
+             <Button onClick={onAddPost} className="h-9 bg-indigo-600 hover:bg-indigo-700 font-bold text-xs gap-2">
+               <Plus className="w-3 h-3" /> Nuovo Post
+             </Button>
+           )}
         </div>
       </div>
 
@@ -231,7 +236,6 @@ export function CalendarioVisuale({ clienteId, posts }: Props) {
             {days.map(day => {
               const postsInDay = posts.filter(p => {
                 if (!p.data_pubblicazione) return false;
-                // Controllo sicuro che sia un Timestamp di Firestore
                 if (typeof p.data_pubblicazione.toDate !== 'function') return false;
                 return isSameDay(p.data_pubblicazione.toDate(), day);
               });
