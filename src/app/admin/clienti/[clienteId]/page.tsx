@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase, useCollection, useDoc, useAuth } from '@/firebase';
-import { collection, doc, query, orderBy, updateDoc, serverTimestamp, deleteDoc, increment, arrayUnion, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, doc, query, orderBy, updateDoc, serverTimestamp, deleteDoc, increment, arrayUnion, Timestamp, getDocs, where } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { StatoPost, STATO_POST_LABELS, STATO_POST_COLORS, Post, PIATTAFORMA_LABELS } from '@/types/post';
 import { StatoValidazione, STATO_VALIDAZIONE_LABELS, STATO_VALIDAZIONE_COLORS, getFileTypeInfo, Material, DESTINAZIONE_LABELS } from '@/types/material';
@@ -140,7 +139,6 @@ export default function ClienteDettaglio() {
   const handleExportData = async () => {
     setIsExporting(true);
     try {
-      // Raccogliamo tutti i dati correnti
       const exportData = {
         azienda: client,
         post: posts || [],
@@ -170,20 +168,27 @@ export default function ClienteDettaglio() {
     if (!haPermesso('gestione_utenti')) return;
     setIsDeleting(true);
     try {
-      // 1. Cancelliamo i documenti correlati (best effort client-side)
-      // Nota: In produzione questo verrebbe gestito da una Cloud Function ricorsiva
+      // 1. Trova gli utenti associati a questo cliente per revocare gli accessi Firestore
+      const usersQuery = query(collection(db, 'users'), where('cliente_id', '==', clienteId));
+      const usersSnap = await getDocs(usersQuery);
+      
+      // 2. Raccogliamo tutti i post e materiali per una pulizia profonda
       const postSnap = await getDocs(collection(db, 'clienti', clienteId, 'post'));
       const matSnap = await getDocs(collection(db, 'clienti', clienteId, 'materiali'));
       
       const deletePromises = [
+        ...usersSnap.docs.map(d => deleteDoc(d.ref)), // Cancella profili utenti (Revoca Accesso)
         ...postSnap.docs.map(d => deleteDoc(d.ref)),
         ...matSnap.docs.map(d => deleteDoc(d.ref)),
-        deleteDoc(doc(db, 'clienti', clienteId))
+        deleteDoc(doc(db, 'clienti', clienteId)) // Cancella l'azienda
       ];
 
       await Promise.all(deletePromises);
       
-      toast({ title: "Cliente Eliminato", description: "Tutti i dati del tenant sono stati rimossi." });
+      toast({ 
+        title: "Cliente Eliminato", 
+        description: "Dati e accessi Firestore rimossi definitivamente. Ricorda di eliminare manualmente l'email dalla console Auth se necessario." 
+      });
       router.push('/admin');
     } catch (error) {
       toast({ variant: 'destructive', title: "Errore Cancellazione", description: "Errore durante la rimozione del cliente." });
@@ -382,7 +387,7 @@ export default function ClienteDettaglio() {
                         <AlertTriangle className="w-5 h-5" /> Attenzione: Azione Irreversibile
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Stai per cancellare definitivamente l'azienda <strong>{client.nome_azienda}</strong> e tutti i relativi contenuti (Post, Commenti, Materiali). Ti consigliamo di scaricare l'archivio prima di procedere.
+                        Stai per cancellare definitivamente l'azienda <strong>{client.nome_azienda}</strong> e tutti i relativi contenuti (Post, Commenti, Materiali). Verranno rimossi anche i profili di accesso dei referenti. Ti consigliamo di scaricare l'archivio prima di procedere.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -411,4 +416,3 @@ export default function ClienteDettaglio() {
     </div>
   );
 }
-
