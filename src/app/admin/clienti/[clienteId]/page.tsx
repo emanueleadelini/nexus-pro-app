@@ -36,7 +36,8 @@ import {
   PieChart,
   FileText,
   Zap,
-  Clock
+  Clock,
+  Timer
 } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
@@ -85,7 +86,6 @@ export default function ClienteDettaglio() {
   const [isPianoOpen, setIsPianoOpen] = useState(false);
   const [postDaModificare, setPostDaModificare] = useState<Post | null>(null);
   const [postPerCommenti, setPostPerCommenti] = useState<string | null>(null);
-  const [logoUrl, setLogoUrl] = useState('');
 
   const clientDocRef = useMemoFirebase(() => {
     if (!user) return null;
