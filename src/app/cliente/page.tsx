@@ -34,7 +34,8 @@ import {
   Bookmark,
   Zap,
   Timer,
-  LayoutGrid
+  LayoutGrid,
+  FolderOpen
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -171,7 +172,15 @@ export default function ClienteDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden flex items-center justify-center p-2">
-            {client.logo_url ? <img src={client.logo_url} alt="Logo" className="w-full h-full object-contain" /> : <AvatarFallback className="bg-indigo-600 text-white">{client.nome_azienda?.charAt(0)}</AvatarFallback>}
+            {client.logo_url ? (
+              <img src={client.logo_url} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <Avatar className="h-full w-full rounded-none">
+                <AvatarFallback className="bg-indigo-600 text-white">
+                  {client.nome_azienda?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
           <div>
             <h1 className="text-3xl font-headline font-bold">Area Riservata {client?.nome_azienda}</h1>
@@ -237,6 +246,36 @@ export default function ClienteDashboard() {
                   );
                 })}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Sezione Asset Corretta */}
+          <Card className="rounded-xl shadow-md border-gray-100">
+            <CardHeader>
+              <CardTitle className="text-sm uppercase flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-indigo-600" /> I Tuoi Asset
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {materials?.filter(m => m.destinazione !== 'strategico').slice(0, 5).map(mat => (
+                <div key={mat.id} className="p-3 flex items-center gap-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <div className="p-2 bg-indigo-50 rounded">
+                    <FolderOpen className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold truncate">{mat.nome_file}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-[9px] text-gray-400">{mat.creato_il?.toDate().toLocaleDateString()}</span>
+                      <Badge className={`${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].bg} ${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].text} text-[8px] px-1 py-0`}>
+                        {STATO_VALIDAZIONE_LABELS[mat.stato_validazione]}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!materials || materials.filter(m => m.destinazione !== 'strategico').length === 0) && (
+                <p className="text-xs text-gray-400 italic text-center py-4">Nessun asset caricato.</p>
+              )}
             </CardContent>
           </Card>
         </div>
