@@ -3,127 +3,91 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * CORE PHILOSOPHY:
-     * This ruleset implements a Database-Based Access Control (DBAC) model for the Nexus Agency application.
-     * Access is governed by a user's role ('admin' or 'client') and their association with a specific 'Client' entity.
-     * 
-     * DATA STRUCTURE:
-     * - /users/{uid}: Central profile storage. Authentication UID is used as the Document ID.
-     * - /clienti/{clienteId}: Top-level agency clients.
-     * - /clienti/{clienteId}/post/{postId}: Subcollection for editorial content.
-     * - /clienti/{clienteId}/materiali/{materialeId}: Subcollection for digital assets.
-     * 
-     * KEY SECURITY DECISIONS:
-     * - Role Lookup: Since Custom Claims are not used, a `get()` call to the `/users` collection is performed to determine the requester's role and clientId.
-     * - Multi-tenancy: Clients are strictly siloed. A user with role 'client' can only access data where the path wildcard `{clienteId}` matches the `clientId` stored in their user profile.
-     * - Admin Oversight: Users with the 'admin' role bypass client-level siloing for all collections.
-     * - Immutability: Critical relational fields like `clientId` and `uploadedBy` are protected during updates.
-     * 
-     * PROTOTYPING MODE:
-     * Rules focus on authorization and relational integrity (IDs matching paths). Detailed schema validation (types, optional fields) is omitted to allow for rapid development iteration.
+     * CORE PHILOSOPHY V5.2 (SaaS Ready)
+     * This ruleset implements a robust multi-tenant RBAC model.
+     * Roles: super_admin, operatore, referente, collaboratore.
+     * Isolation: clients are siloed by cliente_id.
      */
 
     // --- HELPER FUNCTIONS ---
 
-    /** Checks if the user is authenticated. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** Retrieves the user's document from Firestore. */
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    /** Verifies if the authenticated user has the 'admin' role. */
-    function isAdmin() {
-      return isSignedIn() && getUserData().role == 'admin';
+    function isSuperAdmin() {
+      return isSignedIn() && getUserData().ruolo == 'super_admin';
     }
 
-    /** Verifies if the authenticated user is a client associated with a specific ID. */
-    function isClient(targetClientId) {
-      return isSignedIn() && getUserData().role == 'client' && getUserData().clientId == targetClientId;
+    function isOperatore() {
+      return isSignedIn() && getUserData().ruolo == 'operatore';
     }
 
-    /** Checks if the user is the owner of the document (based on UID matching ID). */
+    function isAgency() {
+      return isSuperAdmin() || isOperatore();
+    }
+
+    function isReferente(clientId) {
+      return isSignedIn() && getUserData().ruolo == 'referente' && getUserData().cliente_id == clientId;
+    }
+
+    function isCollaboratore(clientId) {
+      return isSignedIn() && getUserData().ruolo == 'collaboratore' && getUserData().cliente_id == clientId;
+    }
+
+    function isClient(clientId) {
+      return isReferente(clientId) || isCollaboratore(clientId);
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** Checks if the user is the owner and the document exists (for updates/deletes). */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
+    // --- RULES ---
 
-    /** Validates that a field is not being changed. */
-    function isUnchanged(fieldName) {
-      return request.resource.data[fieldName] == resource.data[fieldName];
-    }
-
-    // --- COLLECTION RULES ---
-
-    /**
-     * @description Rules for user profiles. Users can manage their own profile; admins can manage everyone.
-     * @path /users/{uid}
-     * @allow get: if isOwner(uid) || isAdmin();
-     * @allow list: if isAdmin();
-     * @allow create: if isOwner(uid) || isAdmin();
-     * @allow update: if (isOwner(uid) && isUnchanged('role')) || isAdmin();
-     * @deny delete: if !isAdmin();
-     * @principle Ownership-based access for users, role-based for admins.
-     */
     match /users/{uid} {
-      allow get: if isOwner(uid) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if (isOwner(uid) && request.resource.data.id == uid) || isAdmin();
-      allow update: if (isExistingOwner(uid) && isUnchanged('role') && isUnchanged('id')) || isAdmin();
-      allow delete: if isAdmin();
+      allow get: if isOwner(uid) || isAgency();
+      allow list: if isAgency();
+      allow create: if isSignedIn();
+      allow update: if (isOwner(uid) && request.resource.data.ruolo == resource.data.ruolo) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
-    /**
-     * @description Rules for client companies. Clients can read their own company info; admins have full control.
-     * @path /clienti/{clienteId}
-     * @allow get: if isClient(clienteId) || isAdmin();
-     * @allow list: if isAdmin();
-     * @allow create: if isAdmin();
-     * @allow update: if isAdmin();
-     * @allow delete: if isAdmin();
-     * @principle Client-siloing for clients, universal access for admins.
-     */
     match /clienti/{clienteId} {
-      allow get: if isClient(clienteId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow get: if isClient(clienteId) || isAgency();
+      allow list: if isAgency();
+      allow create, update, delete: if isSuperAdmin();
 
-      /**
-       * @description Rules for editorial posts. Nested under the parent client.
-       * @path /clienti/{clienteId}/post/{postId}
-       * @allow read: if isClient(clienteId) || isAdmin();
-       * @allow write: if isClient(clienteId) || isAdmin();
-       * @principle Path-based authorization matched against user's clientId.
-       */
       match /post/{postId} {
-        allow get, list: if isClient(clienteId) || isAdmin();
-        allow create: if (isClient(clienteId) && request.resource.data.clientId == clienteId) || isAdmin();
-        allow update: if (resource != null && (isClient(clienteId) || isAdmin()) && isUnchanged('clientId'));
-        allow delete: if (resource != null && (isClient(clienteId) || isAdmin()));
+        allow get, list: if isClient(clienteId) || isAgency();
+        allow create: if isAgency();
+        allow update: if isAgency() || (isReferente(clienteId) && resource.data.stato == 'da_approvare' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stato', 'storico_stati', 'aggiornato_il']));
+        allow delete: if isAgency();
+        
+        match /commenti/{commentoId} {
+          allow read, write: if isClient(clienteId) || isAgency();
+        }
       }
 
-      /**
-       * @description Rules for digital materials/assets. Nested under the parent client.
-       * @path /clienti/{clienteId}/materiali/{materialeId}
-       * @allow read: if isClient(clienteId) || isAdmin();
-       * @allow write: if isClient(clienteId) || isAdmin();
-       * @principle Ensures uploaded material belongs to the active client and tracks the uploader.
-       */
       match /materiali/{materialeId} {
-        allow get, list: if isClient(clienteId) || isAdmin();
-        allow create: if (isClient(clienteId) && request.resource.data.clientId == clienteId && request.resource.data.uploadedBy == request.auth.uid) || isAdmin();
-        allow update: if (resource != null && (isClient(clienteId) || isAdmin()) && isUnchanged('clientId') && isUnchanged('uploadedBy'));
-        allow delete: if (resource != null && (isClient(clienteId) || isAdmin()));
+        allow get, list: if isClient(clienteId) || isAgency();
+        allow create: if isClient(clienteId) || isAgency();
+        allow update: if isAgency() || (isReferente(clienteId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stato_validazione', 'note_rifiuto']));
+        allow delete: if isAgency();
       }
+    }
+
+    match /notifiche/{notificaId} {
+      // FIX: allow list based on the destinatario_uid filter used in the query
+      allow list: if isSignedIn() && (request.query.filters.destinatario_uid == request.auth.uid || isAgency());
+      allow get: if isSignedIn() && (resource.data.destinatario_uid == request.auth.uid || isAgency());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource.data.destinatario_uid == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['letta', 'letta_il']);
+      allow delete: if isAgency();
     }
   }
 }
