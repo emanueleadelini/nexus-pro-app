@@ -123,6 +123,9 @@ export function CalendarioVisuale({ clienteId, posts, onAddPost, readOnly }: Pro
 
   const isReadOnly = readOnly !== undefined ? readOnly : !isAdmin;
 
+  // I sensori devono essere definiti in modo costante.
+  // La disabilitazione del drag-and-drop viene gestita tramite la prop 'disabled' 
+  // nei componenti DraggablePostCard e CalendarDayCell.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -225,7 +228,7 @@ export function CalendarioVisuale({ clienteId, posts, onAddPost, readOnly }: Pro
       </div>
 
       <DndContext 
-        sensors={isReadOnly ? [] : sensors} 
+        sensors={sensors} 
         collisionDetection={closestCenter} 
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
