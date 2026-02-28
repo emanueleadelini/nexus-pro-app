@@ -1,10 +1,10 @@
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
-import { collection, doc, query, orderBy, updateDoc, addDoc, getDoc, serverTimestamp, arrayUnion, Timestamp, increment } from 'firebase/firestore';
-import { StatoPost, STATO_POST_LABELS, STATO_POST_COLORS, PIATTAFORMA_LABELS } from '@/types/post';
-import { StatoValidazione, STATO_VALIDAZIONE_LABELS, STATO_VALIDAZIONE_COLORS, getFileTypeInfo, Material, DestinazioneAsset } from '@/types/material';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { collection, doc, query, orderBy, updateDoc, addDoc, getDoc, serverTimestamp, arrayUnion, Timestamp } from 'firebase/firestore';
+import { StatoPost } from '@/types/post';
+import { Material, DestinazioneAsset, STATO_VALIDAZIONE_LABELS, STATO_VALIDAZIONE_COLORS } from '@/types/material';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,27 +12,14 @@ import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Upload, 
-  ArrowUpRight, 
-  Check, 
   Loader2, 
   X, 
   CalendarDays, 
   Clock, 
-  PieChart, 
-  Image as ImageIcon, 
-  Link as LinkIcon, 
-  MessageSquare, 
   CreditCard, 
-  AlertTriangle, 
   ShieldCheck, 
   Briefcase, 
-  FileText, 
   Download,
-  Heart,
-  MessageCircle,
-  Send,
-  Bookmark,
-  Zap,
   Timer,
   LayoutGrid,
   FolderOpen
@@ -50,11 +37,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { usePermessi } from '@/hooks/use-permessi';
 import { useSearchParams } from 'next/navigation';
-import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { formatDistanceToNow } from 'date-fns';
-import { it } from 'date-fns/locale';
 import { CalendarioVisuale } from '@/components/admin/calendario-visuale';
+import { FeedInstagramPreview } from '@/components/feed-instagram-preview';
 
 export default function ClienteDashboard() {
   const { user } = useUser();
@@ -88,7 +72,16 @@ export default function ClienteDashboard() {
   }, [user, db]);
 
   useEffect(() => {
-    if (postIdFromUrl) setPostPerCommenti(postIdFromUrl);
+    if (postIdFromUrl) {
+      setPostPerCommenti(postIdFromUrl);
+      // Scroll al post se presente
+      setTimeout(() => {
+        const element = document.getElementById(`post-${postIdFromUrl}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 800);
+    }
   }, [postIdFromUrl]);
 
   const clientDocRef = useMemoFirebase(() => {
@@ -194,7 +187,7 @@ export default function ClienteDashboard() {
               <img src={client.logo_url} alt="Logo" className="w-full h-full object-contain" />
             ) : (
               <Avatar className="h-full w-full rounded-none">
-                <AvatarFallback className="bg-indigo-600 text-white">
+                <AvatarFallback className="bg-indigo-600 text-white font-bold">
                   {client.nome_azienda?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
@@ -207,7 +200,7 @@ export default function ClienteDashboard() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-indigo-600"><Upload className="w-4 h-4 mr-2" /> Invia Asset</Button>
+            <Button className="bg-indigo-600 shadow-lg shadow-indigo-100"><Upload className="w-4 h-4 mr-2" /> Invia Asset</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -302,7 +295,7 @@ export default function ClienteDashboard() {
             </CardContent>
           </Card>
 
-          {/* Sezione Asset Corretta */}
+          {/* Sezione Asset */}
           <Card className="rounded-xl shadow-md border-gray-100">
             <CardHeader>
               <CardTitle className="text-sm uppercase flex items-center gap-2">
@@ -322,7 +315,7 @@ export default function ClienteDashboard() {
                     )}
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-[9px] text-gray-400">{mat.creato_il?.toDate().toLocaleDateString()}</span>
-                      <Badge className={`${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].bg} ${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].text} text-[8px] px-1 py-0`}>
+                      <Badge className={`${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].bg} ${STATO_VALIDAZIONE_COLORS[mat.stato_validazione].text} text-[8px] px-1 py-0 border-none`}>
                         {STATO_VALIDAZIONE_LABELS[mat.stato_validazione]}
                       </Badge>
                     </div>
@@ -356,79 +349,26 @@ export default function ClienteDashboard() {
               </div>
 
               {isPostsLoading ? <Skeleton className="h-64 w-full" /> : posts && posts.length > 0 ? (
-                <div className="space-y-8 max-w-[500px] mx-auto">
+                <div className="space-y-8 max-w-[500px] mx-auto pb-20">
                   {posts.filter(p => p.stato !== 'bozza').map((post: any) => {
                     const material = materials?.find(m => m.id === post.materiale_id);
-                    const scadenzaStr = post.scadenza_approvazione && typeof post.scadenza_approvazione.toDate === 'function'
-                      ? formatDistanceToNow(post.scadenza_approvazione.toDate(), { addSuffix: true, locale: it })
-                      : null;
-                    
-                    const isUrgent = post.stato === 'da_approvare' && scadenzaStr;
-
                     return (
-                      <Card key={post.id} className="rounded-xl border-gray-200 overflow-hidden bg-white shadow-sm">
-                        <div className="p-3 flex items-center justify-between border-b">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              {client.logo_url ? <AvatarImage src={client.logo_url} /> : <AvatarFallback>{client.nome_azienda?.charAt(0)}</AvatarFallback>}
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold leading-none">{client?.nome_azienda}</span>
-                              <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                                {post.tipo_pianificazione === 'immediata' ? <Zap className="w-2 h-2 text-amber-500 fill-amber-500" /> : <Clock className="w-2 h-2" />}
-                                {post.tipo_pianificazione === 'immediata' ? 'Pubblicazione Immediata' : 'Programmato'}
-                              </span>
-                            </div>
-                          </div>
-                          <Badge className={`${STATO_POST_COLORS[post.stato].bg} ${STATO_POST_COLORS[post.stato].text} text-[9px] uppercase`}>
-                            {STATO_POST_LABELS[post.stato]}
-                          </Badge>
-                        </div>
-
-                        <div className="aspect-square bg-gray-50 relative group">
-                          {material?.url_storage ? (
-                            <Image src={material.url_storage} alt={post.titolo} fill className="object-cover" />
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-300">
-                              <ImageIcon className="w-12 h-12 mb-2"/>
-                              <span className="text-[10px] uppercase font-bold">In attesa di asset grafico</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-3 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <Heart className="w-6 h-6 hover:text-red-500 cursor-pointer transition-colors" />
-                              <MessageCircle className="w-6 h-6 hover:text-indigo-600 cursor-pointer" onClick={() => setPostPerCommenti(post.id)} />
-                              <Send className="w-6 h-6" />
-                            </div>
-                            <Bookmark className="w-6 h-6" />
-                          </div>
-
-                          <div className="space-y-1">
-                            <p className="text-sm font-bold">{client?.nome_azienda} <span className="font-normal ml-1">{post.titolo}</span></p>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{post.testo}</p>
-                          </div>
-
-                          {isUrgent && (
-                            <div className="bg-red-50 p-2 rounded border border-red-100 flex items-center gap-2 text-[10px] font-bold text-red-700 uppercase">
-                              <AlertTriangle className="w-3 h-3" /> Scadenza approvazione: {scadenzaStr}
-                            </div>
-                          )}
-                        </div>
-
-                        {haPermesso('approvazione_post') && post.stato === 'da_approvare' && (
-                          <CardFooter className="p-3 bg-gray-50 border-t flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1 text-red-600 border-red-100 font-bold" onClick={() => handleApprovazione(post.id, false)}>
-                              <X className="w-4 h-4 mr-1" /> Revisione
-                            </Button>
-                            <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700 font-bold" onClick={() => handleApprovazione(post.id, true)}>
-                              <Check className="w-4 h-4 mr-1" /> Approva
-                            </Button>
-                          </CardFooter>
-                        )}
-                      </Card>
+                      <div 
+                        key={post.id} 
+                        id={`post-${post.id}`} 
+                        className={`transition-all duration-1000 ${post.id === postIdFromUrl ? 'ring-4 ring-indigo-500 ring-offset-4 rounded-xl' : ''}`}
+                      >
+                        <FeedInstagramPreview
+                          post={post}
+                          clienteNome={client.nome_azienda}
+                          clienteLogo={client.logo_url}
+                          showActions={haPermesso('approvazione_post') && post.stato === 'da_approvare'}
+                          materialUrl={material?.url_storage}
+                          onApprove={() => handleApprovazione(post.id, true)}
+                          onReject={() => handleApprovazione(post.id, false)}
+                          onComment={() => setPostPerCommenti(post.id)}
+                        />
+                      </div>
                     );
                   })}
                 </div>

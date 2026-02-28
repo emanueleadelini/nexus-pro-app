@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { query, collection, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Bell, Check, Clock, MessageSquare, FileText, AlertTriangle, History } from 'lucide-react';
+import { Bell, Check, Clock, MessageSquare, FileText, AlertTriangle, History, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +18,7 @@ export function NotificheBell() {
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!user || !db) return null;
@@ -29,7 +29,7 @@ export function NotificheBell() {
     );
   }, [db, user]);
 
-  const { data: notifications } = useCollection<Notifica>(notificationsQuery);
+  const { data: notifications, isLoading } = useCollection<Notifica>(notificationsQuery);
   const unreadCount = notifications?.filter(n => !n.letta).length || 0;
 
   const handleNotificationClick = async (notification: Notifica) => {
@@ -49,15 +49,25 @@ export function NotificheBell() {
       });
     }
 
-    if (notification.riferimento_tipo === 'post' && notification.cliente_id) {
-      const path = window.location.pathname.startsWith('/admin') ? '/admin' : '/cliente';
-      router.push(`${path}/clienti/${notification.cliente_id}?postId=${notification.riferimento_id}`);
+    // DEEP LINKING V5.4
+    const isAdminArea = window.location.pathname.startsWith('/admin');
+    const basePath = isAdminArea ? '/admin' : '/cliente';
+
+    if (notification.riferimento_tipo === 'post') {
+      router.push(`${basePath}${isAdminArea ? `/clienti/${notification.cliente_id}` : ''}?postId=${notification.riferimento_id}`);
+    } else if (notification.riferimento_tipo === 'materiale') {
+      router.push(`${basePath}${isAdminArea ? `/clienti/${notification.cliente_id}` : ''}`);
+    } else if (notification.riferimento_tipo === 'cliente' && isAdminArea) {
+      router.push(`/admin/clienti/${notification.cliente_id}`);
     }
+
+    setIsOpen(false);
   };
 
   const vaiAlRiepilogo = () => {
     const path = window.location.pathname.startsWith('/admin') ? '/admin/notifiche' : '/cliente/notifiche';
     router.push(path);
+    setIsOpen(false);
   };
 
   const getIcon = (tipo: TipoNotifica) => {
@@ -67,12 +77,13 @@ export function NotificheBell() {
       case 'post_approvato': return <Check className="w-4 h-4 text-emerald-500" />;
       case 'post_revisione': return <AlertTriangle className="w-4 h-4 text-red-500" />;
       case 'materiale_caricato': return <FileText className="w-4 h-4 text-indigo-500" />;
-      default: return <Bell className="w-4 h-4 text-gray-400" />;
+      case 'approvazione_auto_silenzio': return <RefreshCw className="w-4 h-4 text-purple-500" />;
+      default: return <Sparkles className="w-4 h-4 text-gray-400" />;
     }
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full hover:bg-gray-100 transition-colors">
           <Bell className="w-5 h-5 text-gray-600" />
@@ -85,7 +96,7 @@ export function NotificheBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0 shadow-2xl border-gray-100 rounded-xl overflow-hidden">
         <DropdownMenuLabel className="p-4 flex justify-between items-center bg-gray-50/80 backdrop-blur-sm">
-          <span className="font-headline font-bold text-sm text-gray-900">Notifiche Recenti</span>
+          <span className="font-headline font-bold text-sm text-gray-900">Notifiche</span>
           {unreadCount > 0 && (
             <Badge variant="outline" className="text-[9px] border-indigo-200 text-indigo-600 font-bold uppercase">
               {unreadCount} nuove
@@ -94,7 +105,9 @@ export function NotificheBell() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="m-0" />
         <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-          {notifications && notifications.length > 0 ? (
+          {isLoading ? (
+            <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" /></div>
+          ) : notifications && notifications.length > 0 ? (
             notifications.map((n) => (
               <DropdownMenuItem 
                 key={n.id} 
@@ -133,7 +146,7 @@ export function NotificheBell() {
           className="w-full text-[10px] font-bold uppercase text-indigo-600 h-10 rounded-none hover:bg-indigo-50 flex items-center gap-2"
           onClick={vaiAlRiepilogo}
         >
-          <History className="w-3 h-3" /> Mostra tutto lo storico
+          <History className="w-3 h-3" /> Riepilogo Completo
         </Button>
       </DropdownMenuContent>
     </DropdownMenu>
