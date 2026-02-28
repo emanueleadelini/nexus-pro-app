@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, Loader2, UserCircle, Briefcase } from 'lucide-react';
+import { LogOut, Loader2, UserCircle, Briefcase, ShieldCheck } from 'lucide-react';
 import { NotificheBell } from '@/components/notifiche-bell';
 
 export default function ClienteLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +17,6 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
   const [nomeAzienda, setNomeAzienda] = useState('');
   const [clienteId, setClienteId] = useState<string | null>(null);
 
-  // Recupero iniziale per autorizzazione e clienteId
   useEffect(() => {
     if (isUserLoading) return;
 
@@ -49,7 +48,6 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
     checkRole();
   }, [user, isUserLoading, db, router]);
 
-  // Sottoscrizione in tempo reale ai dati del cliente per il logo
   const clientDocRef = useMemoFirebase(() => {
     if (!user || !clienteId) return null;
     return doc(db, 'clienti', clienteId);
@@ -58,56 +56,56 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
 
   if (isUserLoading || !isAuthorized) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="animate-spin text-indigo-600 w-12 h-12 mb-4" />
-        <p className="text-gray-500 font-medium animate-pulse text-sm">Caricamento Area Riservata...</p>
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950">
+        <Loader2 className="animate-spin text-indigo-500 w-12 h-12 mb-4" />
+        <p className="text-slate-400 font-medium animate-pulse text-sm">Caricamento Hub Pro...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-gray-200/50 h-20 flex items-center justify-between px-6 md:px-12 sticky top-0 z-30 shadow-sm">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
+      <header className="bg-slate-900/50 backdrop-blur-xl border-b border-white/5 h-20 flex items-center justify-between px-6 md:px-12 sticky top-0 z-30 shadow-2xl">
         <div className="flex items-center gap-6">
-          <div className="font-headline font-bold text-2xl text-indigo-600 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 shadow-sm overflow-hidden flex items-center justify-center p-1.5">
+          <div className="font-headline font-bold text-xl text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 shadow-inner overflow-hidden flex items-center justify-center p-1">
               {clientData?.logo_url ? (
                 <img src={clientData.logo_url} alt="Logo" className="w-full h-full object-contain" />
               ) : (
-                <Briefcase className="w-6 h-6 text-indigo-500" />
+                <ShieldCheck className="w-6 h-6 text-indigo-500" />
               )}
             </div>
-            <span className="hidden sm:inline">AD next lab</span>
+            <div className="flex flex-col">
+              <span className="leading-tight">AD next lab</span>
+              <span className="text-[10px] text-indigo-400 uppercase tracking-widest font-black">Nexus Pro</span>
+            </div>
           </div>
-          <div className="hidden md:block h-8 w-px bg-gray-200" />
-          <div className="hidden md:flex items-center gap-3 text-sm text-gray-600 font-bold bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
-             <UserCircle className="w-5 h-5 text-indigo-500" /> {nomeAzienda}
+          <div className="hidden md:block h-8 w-px bg-white/10" />
+          <div className="hidden md:flex items-center gap-3 text-xs text-slate-300 font-bold bg-white/5 px-4 py-2 rounded-full border border-white/5">
+             <UserCircle className="w-4 h-4 text-indigo-400" /> {nomeAzienda}
           </div>
         </div>
         
         <div className="flex items-center gap-4">
           <NotificheBell />
-          <div className="hidden sm:block md:hidden text-xs font-bold text-gray-400 truncate max-w-[120px]">
-            {nomeAzienda}
-          </div>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-red-600 font-bold gap-2 hover:bg-red-50 hover:text-red-700 transition-all rounded-lg" 
+            className="text-slate-400 font-bold gap-2 hover:bg-red-500/10 hover:text-red-400 transition-all rounded-lg" 
             onClick={() => auth.signOut()}
           >
             <LogOut className="w-4 h-4" /> 
-            <span className="hidden sm:inline">Esci</span>
+            <span className="hidden sm:inline text-xs">Esci</span>
           </Button>
         </div>
       </header>
       
-      <main className="flex-1 p-4 md:p-12 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
+      <main className="flex-1 p-4 md:p-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
         {children}
       </main>
 
-      <footer className="bg-white border-t border-gray-100 p-6 text-center text-gray-400 text-xs">
-        &copy; {new Date().getFullYear()} AD next lab - Tutti i diritti riservati.
+      <footer className="bg-slate-900/30 border-t border-white/5 p-8 text-center text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+        &copy; {new Date().getFullYear()} AD next lab Hub Digitale &bull; Progettato per l'eccellenza digitale
       </footer>
     </div>
   );

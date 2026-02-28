@@ -1,15 +1,14 @@
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the Nexus Agency app.",
+      "description": "Represents a user of the Nexus Pro app.",
       "properties": {
         "id": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "ruolo": { "type": "string", "enum": ["super_admin", "operatore", "referente", "collaboratore"] },
-        "cliente_id": { "type": "string" },
+        "cliente_id": { "type": "string", "description": "Tenant ID for multi-tenancy" },
         "nomeAzienda": { "type": "string" },
         "permessi": { "type": "array", "items": { "type": "string" } },
         "creatoIl": { "type": "string", "format": "date-time" }
@@ -21,7 +20,7 @@
       "properties": {
         "nome_azienda": { "type": "string" },
         "settore": { "type": "string" },
-        "logo_url": { "type": "string" },
+        "logo_url": { "type": "string", "description": "Dynamic branding logo" },
         "post_totali": { "type": "number" },
         "post_usati": { "type": "number" },
         "include_business_plan": { "type": "boolean" },
@@ -41,21 +40,8 @@
         "formato": { "type": "string" },
         "materiale_id": { "type": "string" },
         "tipo_pianificazione": { "type": "string", "enum": ["immediata", "programmata"] },
-        "scadenza_approvazione": { "type": "string", "format": "date-time" },
+        "scadenza_approvazione": { "type": "string", "format": "date-time", "description": "Deadline for Silenzio Assenso (24h)" },
         "data_pubblicazione": { "type": "string", "format": "date-time" },
-        "creato_il": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Materiale": {
-      "title": "Materiale",
-      "type": "object",
-      "properties": {
-        "nome_file": { "type": "string" },
-        "url_storage": { "type": "string" },
-        "link_esterno": { "type": "string" },
-        "destinazione": { "type": "string", "enum": ["social", "sito", "offline", "strategico"] },
-        "note_cliente": { "type": "string" },
-        "stato_validazione": { "type": "string" },
         "creato_il": { "type": "string", "format": "date-time" }
       }
     },
@@ -78,42 +64,9 @@
     "providers": ["password"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{uid}",
-        "definition": {
-          "entityName": "User",
-          "description": "User profiles with role and permissions."
-        }
-      },
-      {
-        "path": "/users/{uid}/notifiche/{notificaId}",
-        "definition": {
-          "entityName": "Notifica",
-          "description": "User-specific notifications for real-time alerts."
-        }
-      },
-      {
-        "path": "/clienti/{clienteId}",
-        "definition": {
-          "entityName": "Client",
-          "description": "Main tenant/client data."
-        }
-      },
-      {
-        "path": "/clienti/{clienteId}/post/{postId}",
-        "definition": {
-          "entityName": "Post",
-          "description": "Social media posts with workflow management and automatic 24h expiration."
-        }
-      },
-      {
-        "path": "/clienti/{clienteId}/materiali/{materialeId}",
-        "definition": {
-          "entityName": "Materiale",
-          "description": "Creative assets and strategic documents categorized by destination."
-        }
-      }
-    ]
+    "/users/{uid}": { "schema": "User", "description": "User profiles" },
+    "/users/{uid}/notifiche/{notificaId}": { "schema": "Notifica", "description": "Personal notification log" },
+    "/clienti/{clienteId}": { "schema": "Client", "description": "Main tenant data" },
+    "/clienti/{clienteId}/post/{postId}": { "schema": "Post", "description": "Content workflow" }
   }
 }

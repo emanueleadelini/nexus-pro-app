@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -7,19 +6,20 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { 
   ShieldCheck, 
-  Users, 
   Sparkles, 
-  CalendarDays, 
-  MessageSquare, 
   ChevronRight, 
   ArrowRight,
   LayoutDashboard,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  Zap,
+  Globe,
+  GraduationCap,
+  Cpu,
+  MousePointer2
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LandingPage() {
   const { user, isUserLoading } = useUser();
@@ -49,163 +49,205 @@ export default function LandingPage() {
     }
   };
 
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-agency');
-
   return (
-    <div className="min-h-screen bg-white font-body selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-slate-950 font-body selection:bg-indigo-500/30 selection:text-white">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center px-6 md:px-20 justify-between">
-        <div className="flex items-center gap-2">
-          <div className="bg-indigo-600 p-2 rounded-lg">
+      <nav className="fixed top-0 w-full z-50 bg-slate-950/50 backdrop-blur-xl border-b border-white/5 h-20 flex items-center px-6 md:px-20 justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-headline font-bold text-gray-900 tracking-tight">AD next lab</span>
+          <span className="text-xl font-headline font-bold text-white tracking-tight">AD next lab <span className="text-indigo-500">Pro</span></span>
         </div>
         <div className="flex items-center gap-4">
           {!isUserLoading && user ? (
-            <Button onClick={handleDashboardRedirect} className="bg-indigo-600 hover:bg-indigo-700 font-bold gap-2 rounded-full px-6 shadow-lg shadow-indigo-100">
-              <LayoutDashboard className="w-4 h-4" /> Vai alla Dashboard
+            <Button onClick={handleDashboardRedirect} className="gradient-primary font-bold gap-2 rounded-full px-6 shadow-xl shadow-indigo-500/10">
+              <LayoutDashboard className="w-4 h-4" /> Dashboard
             </Button>
           ) : (
             <Link href="/login">
-              <Button variant="ghost" className="text-gray-600 font-bold hover:text-indigo-600">Accedi</Button>
+              <Button variant="ghost" className="text-slate-300 font-bold hover:text-white hover:bg-white/5">Accedi</Button>
             </Link>
           )}
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 md:px-20 grid lg:grid-cols-2 gap-12 items-center">
-        <div className="space-y-8 animate-in fade-in slide-in-from-left duration-700">
-          <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-100">
-            <Sparkles className="w-4 h-4" /> Nexus Pro v5.2 è ora online
+      <section className="pt-40 pb-24 px-6 md:px-20 text-center relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-indigo-600/10 blur-[120px] rounded-full -z-10" />
+        
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-bold border border-indigo-500/20 uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5" /> Nexus Pro v5.5: L'Hub del Futuro
           </div>
-          <h1 className="text-5xl md:text-7xl font-headline font-bold text-gray-900 leading-[1.1]">
-            La tua agenzia, <br />
-            <span className="text-indigo-600">finalmente in cloud.</span>
+          <h1 className="text-5xl md:text-7xl font-headline font-bold text-white leading-tight">
+            Smetti di spendere in Marketing. <br />
+            <span className="gradient-text">Inizia a investire in Competenze.</span>
           </h1>
-          <p className="text-xl text-gray-500 max-w-xl leading-relaxed">
-            Gestisci piani editoriali strategici, approvazioni in tempo reale e generazione contenuti con IA in un'unica piattaforma multi-tenant.
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Il primo Hub italiano che unisce Formazione d'eccellenza, Strategia Digitale potenziata dall'AI e Automazione Tech.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button onClick={handleDashboardRedirect} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg font-bold h-14 px-8 rounded-full shadow-xl shadow-indigo-200">
-              Inizia Ora <ArrowRight className="w-5 h-5 ml-2" />
+          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6">
+            <Button size="lg" className="gradient-primary text-lg font-bold h-14 px-10 rounded-full shadow-2xl shadow-indigo-500/20">
+              Prenota Consulenza <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Link href="/login">
-              <Button variant="outline" size="lg" className="text-lg font-bold h-14 px-8 rounded-full border-2">
-                Area Clienti
-              </Button>
-            </Link>
+            <Button onClick={handleDashboardRedirect} variant="outline" size="lg" className="text-lg font-bold h-14 px-10 rounded-full border-white/10 hover:bg-white/5 bg-transparent text-white">
+              Area Riservata
+            </Button>
           </div>
         </div>
-        <div className="relative aspect-video lg:aspect-square rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-1000 border-8 border-white">
-          {heroImage && (
-            <Image 
-              src={heroImage.imageUrl} 
-              alt={heroImage.description} 
-              fill 
-              className="object-cover"
-              data-ai-hint={heroImage.imageHint}
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto mt-24 border-t border-white/5 pt-12">
+          {[
+            { label: "Aziende in Hub", val: "200+" },
+            { label: "Professionisti", val: "5.000+" },
+            { label: "Risparmio Tech", val: "40%" },
+            { label: "Aumento ROI", val: "3x" }
+          ].map((s, i) => (
+            <div key={i} className="space-y-1">
+              <div className="text-3xl font-bold text-white">{s.val}</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-500">{s.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="bg-gray-50 py-24 px-6 md:px-20">
-        <div className="max-w-7xl mx-auto space-y-16">
+      {/* Pillars Section */}
+      <section className="py-24 px-6 md:px-20 bg-slate-900/30">
+        <div className="max-w-6xl mx-auto space-y-16">
           <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-5xl font-headline font-bold">Un ecosistema completo</h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">Tutto ciò di cui hai bisogno per scalare la tua agenzia di comunicazione.</p>
+            <h2 className="text-3xl md:text-5xl font-headline font-bold text-white">I 3 Pilastri di AD next lab</h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">Un ecosistema integrato per trasformare la tua presenza digitale.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { 
-                icon: CalendarDays, 
-                title: "Calendario Strategico", 
-                desc: "Workflow a 7 stati per un controllo totale sulla produzione dei post.",
-                color: "bg-blue-50 text-blue-600"
-              },
-              { 
-                icon: Sparkles, 
-                title: "AI Copywriting", 
-                desc: "Genera bozze creative in pochi secondi con il motore Gemini 2.5.",
-                color: "bg-violet-50 text-violet-600"
-              },
-              { 
-                icon: Building2, 
-                title: "Multi-tenancy", 
-                desc: "I datti di ogni cliente sono isolati e sicuri al 100% con rules V5.2.",
-                color: "bg-emerald-50 text-emerald-600"
-              },
-              { 
-                icon: MessageSquare, 
-                title: "Feedback Loop", 
-                desc: "Approvazioni e commenti centralizzati per eliminare le email infinite.",
-                color: "bg-indigo-50 text-indigo-600"
-              }
-            ].map((feature, i) => (
-              <div key={i} className="bg-white p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition-all group">
-                <div className={`w-12 h-12 ${feature.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-6 h-6" />
+          <Tabs defaultValue="digital" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto bg-slate-900/50 border border-white/5 h-14 p-1 rounded-2xl mb-12">
+              <TabsTrigger value="digital" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold">Digital</TabsTrigger>
+              <TabsTrigger value="tech" className="rounded-xl data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold">Tech</TabsTrigger>
+              <TabsTrigger value="academy" className="rounded-xl data-[state=active]:bg-amber-600 data-[state=active]:text-white font-bold">Academy</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="digital" className="animate-in fade-in zoom-in-95 duration-500">
+              <div className="grid lg:grid-cols-2 gap-12 items-center bg-slate-900/50 border border-white/5 p-8 md:p-16 rounded-[2.5rem]">
+                <div className="space-y-6 text-left">
+                  <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-4xl font-bold text-white">Marketing + IA</h3>
+                  <p className="text-slate-400 leading-relaxed">Strategie di comunicazione basate sui dati e potenziate dall'Intelligenza Artificiale per massimizzare la visibilità e il conversion rate.</p>
+                  <ul className="space-y-3">
+                    {['Content Strategy AI-Driven', 'Social Media Management', 'Performance Marketing', 'SEO & Brand Positioning'].map((f, i) => (
+                      <li key={i} className="flex items-center gap-3 text-slate-300 font-medium">
+                        <CheckCircle2 className="w-5 h-5 text-indigo-500" /> {f}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{feature.desc}</p>
+                <div className="aspect-video bg-indigo-600/20 rounded-3xl border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold">Preview Strategia Digitale</div>
               </div>
-            ))}
-          </div>
+            </TabsContent>
+
+            <TabsContent value="tech" className="animate-in fade-in zoom-in-95 duration-500">
+              <div className="grid lg:grid-cols-2 gap-12 items-center bg-slate-900/50 border border-white/5 p-8 md:p-16 rounded-[2.5rem]">
+                <div className="space-y-6 text-left">
+                  <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center">
+                    <Cpu className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-4xl font-bold text-white">Automazione & Software</h3>
+                  <p className="text-slate-400 leading-relaxed">Costruiamo l'infrastruttura tecnologica che serve alla tua azienda per scalare senza aumentare il carico di lavoro manuale.</p>
+                  <ul className="space-y-3">
+                    {['CRM & Sales Automation', 'Sviluppo Web/App custom', 'Integrazioni API complesse', 'Nexus Pro SaaS Platform'].map((f, i) => (
+                      <li key={i} className="flex items-center gap-3 text-slate-300 font-medium">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="aspect-video bg-emerald-600/20 rounded-3xl border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">Preview Automazione Tech</div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="academy" className="animate-in fade-in zoom-in-95 duration-500">
+              <div className="grid lg:grid-cols-2 gap-12 items-center bg-slate-900/50 border border-white/5 p-8 md:p-16 rounded-[2.5rem]">
+                <div className="space-y-6 text-left">
+                  <div className="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-4xl font-bold text-white">Formazione Master</h3>
+                  <p className="text-slate-400 leading-relaxed">Trasferiamo le nostre competenze al tuo team per renderti indipendente e padrone delle tecnologie di domani.</p>
+                  <ul className="space-y-3">
+                    {['Masterclass AI Generativa', 'Formazione Digital Marketing', 'Workshop Automazione', 'Mentoring per Manager'].map((f, i) => (
+                      <li key={i} className="flex items-center gap-3 text-slate-300 font-medium">
+                        <CheckCircle2 className="w-5 h-5 text-amber-500" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="aspect-video bg-amber-600/20 rounded-3xl border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold">Preview ADNext Academy</div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
 
-      {/* Access Section */}
-      <section className="py-24 px-6 md:px-20 max-w-7xl mx-auto">
-        <div className="bg-indigo-600 rounded-[3rem] p-8 md:p-20 text-white relative overflow-hidden shadow-2xl">
-          <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-4xl md:text-6xl font-headline font-bold">Pronto per il decollo?</h2>
-              <p className="text-indigo-100 text-lg">Nexus Pro è lo strumento definitivo per chi vuole trasformare la produzione di contenuti in un processo industriale di alta qualità.</p>
-              <ul className="space-y-3">
-                {['Isolamento dati Multi-tenant', 'Sistema di crediti usage-based', 'Versionamento post integrato'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 font-medium">
-                    <CheckCircle2 className="w-5 h-5 text-indigo-300" /> {item}
-                  </li>
-                ))}
-              </ul>
+      {/* Methodology */}
+      <section className="py-24 px-6 md:px-20 max-w-6xl mx-auto">
+        <h2 className="text-3xl md:text-5xl font-headline font-bold text-center mb-20 text-white">Metodologia ADNext</h2>
+        <div className="grid md:grid-cols-4 gap-8">
+          {[
+            { step: "01", title: "Audit", desc: "Analisi profonda dei dati e dei processi attuali.", icon: MousePointer2 },
+            { step: "02", title: "Strategia", desc: "Design del piano d'azione personalizzato.", icon: ShieldCheck },
+            { step: "03", title: "Build", desc: "Implementazione tech e produzione creativa.", icon: Cpu },
+            { step: "04", title: "Optimize", desc: "Monitoraggio real-time e scalabilità.", icon: Zap }
+          ].map((m, i) => (
+            <div key={i} className="relative p-8 glass-card rounded-3xl space-y-4 group hover:border-indigo-500/50 transition-colors">
+              <div className="text-4xl font-black text-white/5 absolute top-4 right-6">{m.step}</div>
+              <div className="w-10 h-10 bg-indigo-600/20 text-indigo-400 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <m.icon className="w-5 h-5" />
+              </div>
+              <h4 className="text-xl font-bold text-white">{m.title}</h4>
+              <p className="text-slate-400 text-sm leading-relaxed">{m.desc}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 space-y-8">
-              <div className="space-y-4">
-                <h4 className="text-2xl font-bold">Accesso Rapido</h4>
-                <p className="text-sm text-indigo-100">Seleziona il tuo profilo per accedere all'area riservata.</p>
-              </div>
-              <div className="grid gap-4">
-                <Button onClick={() => router.push('/login')} className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold h-14 rounded-2xl text-lg">
-                  Accesso Agenzia <Users className="w-5 h-5 ml-2" />
-                </Button>
-                <Button onClick={() => router.push('/login')} variant="outline" className="border-white/40 text-white hover:bg-white/10 font-bold h-14 rounded-2xl text-lg">
-                  Portale Clienti <ChevronRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 px-6 md:px-20 max-w-7xl mx-auto">
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[3rem] p-12 md:p-24 text-white relative overflow-hidden shadow-2xl">
+          <div className="relative z-10 text-center space-y-8 max-w-3xl mx-auto">
+            <h2 className="text-4xl md:text-6xl font-headline font-bold leading-tight">Pronto a scalare la tua azienda?</h2>
+            <p className="text-indigo-100 text-xl">Entra nel futuro del marketing digitale. Prenota oggi la tua sessione strategica gratuita.</p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+              <Button size="lg" className="bg-white text-indigo-600 hover:bg-slate-100 font-bold h-16 px-12 rounded-full text-xl">
+                Prenota Consulenza
+              </Button>
+              <Button onClick={() => router.push('/login')} variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10 font-bold h-16 px-12 rounded-full text-xl bg-transparent">
+                Accedi Hub
+              </Button>
             </div>
           </div>
-          <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl" />
+          {/* Background effects */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-400/20 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-gray-100 px-6 md:px-20 text-center">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-indigo-600" />
-            <span className="font-headline font-bold text-gray-900">AD next lab</span>
+      <footer className="py-12 border-t border-white/5 px-6 md:px-20">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8 max-w-7xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-600 p-1.5 rounded-lg">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-headline font-bold text-white text-lg tracking-tight">AD next lab</span>
           </div>
-          <p className="text-gray-400 text-sm font-medium">© {new Date().getFullYear()} AD next lab. Progettato per l'eccellenza digitale.</p>
-          <div className="flex gap-6 text-sm font-bold text-gray-500">
-            <Link href="#" className="hover:text-indigo-600">Privacy</Link>
-            <Link href="#" className="hover:text-indigo-600">Termini</Link>
-            <Link href="#" className="hover:text-indigo-600">Supporto</Link>
+          <p className="text-slate-500 text-sm font-medium">© {new Date().getFullYear()} AD next lab Hub Digitale. Tutti i diritti riservati.</p>
+          <div className="flex gap-8 text-sm font-bold text-slate-400">
+            <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Termini</Link>
+            <Link href="#" className="hover:text-white transition-colors">Supporto</Link>
           </div>
         </div>
       </footer>
