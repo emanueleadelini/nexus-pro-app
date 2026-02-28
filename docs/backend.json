@@ -66,6 +66,7 @@
         "tipo": { "type": "string" },
         "messaggio": { "type": "string" },
         "destinatario_uid": { "type": "string" },
+        "cliente_id": { "type": "string" },
         "riferimento_tipo": { "type": "string", "enum": ["post", "materiale", "cliente", "commento"] },
         "riferimento_id": { "type": "string" },
         "letta": { "type": "boolean" },
@@ -103,14 +104,14 @@
         "path": "/clienti/{clienteId}/post/{postId}",
         "definition": {
           "entityName": "Post",
-          "description": "Social media posts within the client's editorial calendar."
+          "description": "Social media posts with workflow management and automatic 24h expiration."
         }
       },
       {
         "path": "/clienti/{clienteId}/materiali/{materialeId}",
         "definition": {
           "entityName": "Materiale",
-          "description": "Creative assets and strategic documents."
+          "description": "Creative assets and strategic documents categorized by destination."
         }
       }
     ]

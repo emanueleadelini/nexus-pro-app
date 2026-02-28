@@ -1,6 +1,6 @@
-# Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.4
+# Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.5
 
-Documentazione aggiornata con le specifiche del Workflow 2.0 e integrazione Feed Social.
+Documentazione aggiornata con le specifiche del Workflow 2.0, Feed Social e Ottimizzazione Indici.
 
 ---
 
@@ -12,15 +12,21 @@ Ogni cliente è un "Tenant" identificato da un `cliente_id`.
 - **Security Rules**: Isolamento fisico garantito a livello di collezione `/clienti/{id}`.
 - **Notifiche**: Spostate in sottocollezioni `/users/{uid}/notifiche` per garantire che ogni utente possa leggere solo i propri avvisi.
 
+### Ottimizzazione Database
+Sono stati implementati indici compositi per garantire performance elevate:
+- **Notifiche**: Ordinamento cronologico inverso per il Centro Notifiche.
+- **Feed Post**: Filtraggio per stato e ordinamento per data creazione.
+- **Workflow 2.0**: Query ottimizzate per il controllo delle scadenze (Silenzio Assenso).
+
 ---
 
 ## 2. Nexus Pro Features
 ### 2.1 Post Workflow 2.0 (Silenzio Assenso)
 Il nuovo workflow è ottimizzato per evitare colli di bottiglia:
 1. **Invio**: L'Agenzia crea il post e lo invia in `da_approvare`.
-2. **Alert**: Al cliente arriva notifica immediata (gestionale + email simulata).
+2. **Alert**: Al cliente arriva notifica immediata (gestionale + deep link).
 3. **Countdown 24h**: Il post mostra una scadenza di 24 ore. Se il cliente non agisce, l'agenzia procede secondo la clausola di "Silenzio Assenso".
-4. **Approvazione**: Il cliente può approvare o richiedere revisioni direttamente dal feed.
+4. **Approvazione**: Il cliente può approvare o richiedere revisioni direttamente dal feed Instagram simulato.
 
 ### 2.2 Feed Instagram Preview
 Il cliente non vede un elenco tecnico, ma una **simulazione reale del Feed Instagram**:
@@ -28,6 +34,7 @@ Il cliente non vede un elenco tecnico, ma una **simulazione reale del Feed Insta
 - Immagine in formato 1:1.
 - Pulsanti di interazione (Heart, Comment, Send) per simulazione.
 - Caption (titolo + testo) formattata come sui social.
+- **Deep Linking**: Le notifiche portano l'utente direttamente al post evidenziato.
 
 ### 2.3 Asset Management & Note
 Il caricamento materiali è ora categorizzato:
