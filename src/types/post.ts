@@ -9,12 +9,14 @@ export type StatoPost =
   | 'programmato'
   | 'pubblicato';
 
+export type TipoPianificazione = 'immediata' | 'programmata';
+
 export const STATO_POST_LABELS: Record<StatoPost, string> = {
   bozza: 'Bozza',
   revisione_interna: 'Revisione Interna',
-  da_approvare: 'Da approvare',
+  da_approvare: 'In Attesa Approva',
   revisione: 'Richiesta Revisione',
-  approvato: 'Approvato',
+  approvato: 'Approvato dal Cliente',
   programmato: 'Programmato',
   pubblicato: 'Pubblicato',
 };
@@ -24,7 +26,7 @@ export const STATO_POST_COLORS: Record<StatoPost, { bg: string; text: string }> 
   revisione_interna: { bg: 'bg-blue-100', text: 'text-blue-800' },
   da_approvare: { bg: 'bg-orange-100', text: 'text-orange-800' },
   revisione: { bg: 'bg-red-100', text: 'text-red-800' },
-  approvato: { bg: 'bg-green-100', text: 'text-green-800' },
+  approvato: { bg: 'bg-emerald-100', text: 'text-emerald-800' },
   programmato: { bg: 'bg-purple-100', text: 'text-purple-800' },
   pubblicato: { bg: 'bg-green-600', text: 'text-white' },
 };
@@ -77,7 +79,7 @@ export interface Post {
   aggiornato_il: Timestamp;
   materiale_id?: string | null;
   
-  // Pro Features (Sprint 1C)
+  // Pro Features (Sprint 1C & Workflow 2.0)
   piattaforma: PiattaformaPost;
   formato: FormatoPost;
   tags?: string[];
@@ -85,4 +87,8 @@ export interface Post {
   storico_stati: StoricoStato[];
   versioni: VersionePost[];
   versione_corrente: number;
+  
+  // Nuovi Campi Workflow 2.0
+  tipo_pianificazione: TipoPianificazione;
+  scadenza_approvazione?: Timestamp | null; // Calcolato come +24h dall'invio
 }
