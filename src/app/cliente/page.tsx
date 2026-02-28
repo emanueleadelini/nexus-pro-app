@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Upload, ArrowUpRight, Check, Loader2, X, CalendarDays, Clock, PieChart, Image as ImageIcon, Link as LinkIcon, MessageSquare, History, CreditCard, AlertTriangle } from 'lucide-react';
+import { Upload, ArrowUpRight, Check, Loader2, X, CalendarDays, Clock, PieChart, Image as ImageIcon, Link as LinkIcon, MessageSquare, History, CreditCard, AlertTriangle, FolderOpen } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
