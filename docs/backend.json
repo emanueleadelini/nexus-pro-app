@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -26,8 +25,6 @@
         "email_riferimento": { "type": "string", "format": "email" },
         "post_totali": { "type": "number" },
         "post_usati": { "type": "number" },
-        "include_business_plan": { "type": "boolean" },
-        "include_business_model": { "type": "boolean" },
         "include_contratto": { "type": "boolean" },
         "include_visual_identity": { "type": "boolean" },
         "include_offline": { "type": "boolean" },
@@ -36,11 +33,11 @@
         "ai_training": {
           "type": "object",
           "properties": {
-            "brand_voice": { "type": "string", "description": "Personality and tone of the brand" },
-            "target_audience": { "type": "string", "description": "Primary demographics and interests" },
-            "key_values": { "type": "string", "description": "Core business values and mission" },
-            "main_topics": { "type": "string", "description": "Content pillars usually discussed" },
-            "competitors": { "type": "string", "description": "Reference competitors or industry benchmarks" }
+            "brand_voice": { "type": "string" },
+            "target_audience": { "type": "string" },
+            "key_values": { "type": "string" },
+            "main_topics": { "type": "string" },
+            "competitors": { "type": "string" }
           }
         },
         "creato_il": { "type": "string", "format": "date-time" },
@@ -74,21 +71,6 @@
         "destinazione": { "type": "string", "enum": ["social", "sito", "offline", "strategico", "visual_identity", "contratto"] },
         "tipo_strategico": { "type": "string", "enum": ["piano_strategico", "piano_comunicazione", "business_plan", "business_model"] },
         "tipo_offline": { "type": "string", "enum": ["brochure", "volantino", "6x3", "3x6", "bigliettini", "gadget", "altro"] },
-        "note_cliente": { "type": "string" },
-        "creato_il": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Notifica": {
-      "title": "Notifica",
-      "type": "object",
-      "properties": {
-        "tipo": { "type": "string" },
-        "messaggio": { "type": "string" },
-        "destinatario_uid": { "type": "string" },
-        "cliente_id": { "type": "string" },
-        "riferimento_tipo": { "type": "string", "enum": ["post", "materiale", "cliente", "commento"] },
-        "riferimento_id": { "type": "string" },
-        "letta": { "type": "boolean" },
         "creato_il": { "type": "string", "format": "date-time" }
       }
     }
@@ -97,11 +79,9 @@
     "providers": ["password"]
   },
   "firestore": {
-    "/users/{uid}": { "schema": "User", "description": "User profiles with roles and multi-tenancy" },
-    "/users/{uid}/notifiche/{notificaId}": { "schema": "Notifica", "description": "Personal notification log" },
-    "/clienti/{clienteId}": { "schema": "Client", "description": "Main tenant data" },
-    "/clienti/{clienteId}/post/{postId}": { "schema": "Post", "description": "Content workflow and social posts" },
-    "/clienti/{clienteId}/materiali/{materialeId}": { "schema": "Material", "description": "Creative assets and strategic docs" },
-    "/clienti/{clienteId}/post/{postId}/commenti/{commentoId}": { "schema": "object", "description": "Contextual chat for each post" }
+    "/users/{uid}": { "schema": "User", "description": "User profiles" },
+    "/clienti/{clienteId}": { "schema": "Client", "description": "Tenant data" },
+    "/clienti/{clienteId}/post/{postId}": { "schema": "Post", "description": "Post workflow" },
+    "/clienti/{clienteId}/materiali/{materialeId}": { "schema": "Material", "description": "Assets" }
   }
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -40,13 +39,13 @@ export default function ClienteFeedPage() {
   const clienteId = userData?.cliente_id;
 
   const clientDocRef = useMemoFirebase(() => {
-    if (!clienteId) return null;
+    if (!clienteId || clienteId === 'unknown') return null;
     return doc(db, 'clienti', clienteId);
   }, [db, clienteId]);
   const { data: clientData, isLoading: isClientLoading } = useDoc<any>(clientDocRef);
 
   const postsQuery = useMemoFirebase(() => {
-    if (!clienteId || !isCliente) return null;
+    if (!clienteId || clienteId === 'unknown' || !isCliente) return null;
     return query(
       collection(db, 'clienti', clienteId, 'post'),
       where('stato', 'in', ['da_approvare', 'approvato', 'programmato', 'pubblicato']),
@@ -56,12 +55,11 @@ export default function ClienteFeedPage() {
   const { data: posts, isLoading: isPostsLoading } = useCollection<any>(postsQuery);
 
   const materialsQuery = useMemoFirebase(() => {
-    if (!clienteId) return null;
+    if (!clienteId || clienteId === 'unknown') return null;
     return query(collection(db, 'clienti', clienteId, 'materiali'), orderBy('creato_il', 'desc'));
   }, [db, clienteId]);
   const { data: materials } = useCollection<Material>(materialsQuery);
 
-  // Caricamento asincrono degli asset per ogni post
   useEffect(() => {
     if (!posts || !clienteId) return;
 
@@ -148,7 +146,6 @@ export default function ClienteFeedPage() {
     );
   }
 
-  // Verifica se almeno una sezione brand è attiva
   const hasBrandDocSections = clientData?.include_contratto || clientData?.include_visual_identity || clientData?.include_offline;
 
   return (
@@ -202,7 +199,6 @@ export default function ClienteFeedPage() {
           {hasBrandDocSections && (
             <TabsContent value="brand" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Sezione Contratto Cliente */}
                 {clientData?.include_contratto && (
                   <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
                     <CardHeader className="bg-slate-900 p-6">
@@ -232,7 +228,6 @@ export default function ClienteFeedPage() {
                   </Card>
                 )}
 
-                {/* Visual Identity / Loghi */}
                 {clientData?.include_visual_identity && (
                   <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
                     <CardHeader className="bg-indigo-50 p-6">
@@ -260,7 +255,6 @@ export default function ClienteFeedPage() {
                 )}
               </div>
 
-              {/* Sezione Offline Graphics */}
               {clientData?.include_offline && (
                 <Card className="glass-card rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
                   <CardHeader className="bg-emerald-50 p-8 border-b border-emerald-100">

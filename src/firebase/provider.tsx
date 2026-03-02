@@ -45,7 +45,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     isUserDataLoading: false,
   });
 
-  // Listener Autenticazione
   useEffect(() => {
     if (!auth) return;
 
@@ -56,7 +55,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           ...prev, 
           user: firebaseUser, 
           isUserLoading: false,
-          isUserDataLoading: !!firebaseUser // Se c'è un utente, dovremo caricare i dati
+          isUserDataLoading: !!firebaseUser
         }));
       },
       (error) => {
@@ -66,7 +65,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     return () => unsubscribeAuth();
   }, [auth]);
 
-  // Listener Dati Utente Firestore (Profilo)
   useEffect(() => {
     if (!authState.user || !firestore) {
       setAuthState(prev => ({ ...prev, userData: null, isUserDataLoading: false }));
@@ -83,7 +81,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         }));
       },
       (error) => {
-        console.error("Errore caricamento profilo:", error);
+        console.warn("FirebaseProvider: Errore caricamento profilo (silenziato):", error.message);
         setAuthState(prev => ({ ...prev, isUserDataLoading: false }));
       }
     );

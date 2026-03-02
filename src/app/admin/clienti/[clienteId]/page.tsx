@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -93,19 +92,19 @@ export default function ClienteDettaglio() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const clientDocRef = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !clienteId || clienteId === 'unknown') return null;
     return doc(db, 'clienti', clienteId);
   }, [db, clienteId, user]);
   const { data: client, isLoading: isClientLoading } = useDoc<any>(clientDocRef);
 
   const postsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !clienteId || clienteId === 'unknown') return null;
     return query(collection(db, 'clienti', clienteId, 'post'), orderBy('creato_il', 'desc'));
   }, [db, clienteId, user]);
   const { data: posts } = useCollection<Post>(postsQuery);
 
   const materialsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !clienteId || clienteId === 'unknown') return null;
     return query(collection(db, 'clienti', clienteId, 'materiali'), orderBy('creato_il', 'desc'));
   }, [db, clienteId, user]);
   const { data: materials } = useCollection<Material>(materialsQuery);
@@ -160,14 +159,18 @@ export default function ClienteDettaglio() {
 
   const handleDownloadAll = () => {
     if (!posts || !client) return;
-    const content = posts.map(p => `--- ${p.titolo} ---\nStato: ${STATO_POST_LABELS[p.stato]}\nTesto: ${p.testo}\n`).join('\n\n');
-    const blob = new Blob([`REPORT - ${client.nome_azienda}\n\n${content}`], { type: 'text/plain' });
+    const content = posts.map(p => `--- ${p.titolo} ---\nStato: ${STATO_POST_LABELS[p.stato]}\nTesto: ${p.testo}\nCanali: ${p.piattaforme?.join(', ') || 'N/A'}\n`).join('\n\n');
+    const matContent = materials?.map(m => `- ${m.nome_file} (${m.destinazione}) - Caricato il ${m.creato_il?.toDate().toLocaleDateString()}\n`).join('\n') || 'Nessun asset caricato.';
+    
+    const finalReport = `REPORT HUB PRO - ${client.nome_azienda}\nData: ${new Date().toLocaleString()}\n\nCONTENUTI:\n${content}\n\nMATERIALI E ASSETS:\n${matContent}`;
+    
+    const blob = new Blob([finalReport], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `report-${client.nome_azienda}.txt`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `report-completo-${client.nome_azienda}.txt`; a.click();
   };
 
   if (isClientLoading) return <div className="p-8"><Skeleton className="h-64"/></div>;
-  if (!client) return <div className="p-8">Cliente non trovato.</div>;
+  if (!client) return <div className="p-8 text-center"><p className="text-slate-500 font-bold">Cliente non trovato.</p></div>;
 
   const usagePercent = (client.post_usati / (client.post_totali || 1)) * 100;
   

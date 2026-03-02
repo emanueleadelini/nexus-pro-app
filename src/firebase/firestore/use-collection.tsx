@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Query,
   onSnapshot,
@@ -33,14 +32,34 @@ export function useCollection<T = any>(
   const [data, setData] = useState<WithId<T>[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    // GUARDIA 1: Disabilitato o null
     if (!enabled || !memoizedTargetRefOrQuery) {
       setData(null);
       setIsLoading(false);
       setError(null);
       return;
     }
+
+    // GUARDIA 2: Verifica percorso "unknown" o vuoto
+    try {
+      const path = (memoizedTargetRefOrQuery as any).type === 'collection'
+        ? (memoizedTargetRefOrQuery as CollectionReference).path
+        : (memoizedTargetRefOrQuery as any)._query?.path?.canonicalString?.() || '';
+      
+      if (!path || path === 'unknown' || path.includes('unknown') || path === '/databases/(default)/documents') {
+        console.warn('useCollection: query saltata per percorso non valido:', path);
+        setData(null);
+        setIsLoading(false);
+        return;
+      }
+    } catch (e) {
+      // Fallback sicuro
+    }
+
+    if (unsubscribeRef.current) unsubscribeRef.current();
 
     setIsLoading(true);
     setError(null);
@@ -57,15 +76,15 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (err: FirestoreError) => {
-        // Silenzia l'errore di permessi durante il caricamento iniziale per evitare crash visivi
+        // Silenzia l'errore di permessi per evitare il crash visivo
         if (err.code === 'permission-denied') {
-          console.warn('Permesso negato silenziato per la query:', memoizedTargetRefOrQuery);
+          console.warn('useCollection: Permesso negato silenziato.');
           setData(null);
           setIsLoading(false);
           return;
         }
 
-        const path = memoizedTargetRefOrQuery.type === 'collection'
+        const path = (memoizedTargetRefOrQuery as any).type === 'collection'
           ? (memoizedTargetRefOrQuery as CollectionReference).path
           : (memoizedTargetRefOrQuery as any)._query?.path?.canonicalString?.() || 'unknown';
 
@@ -81,7 +100,10 @@ export function useCollection<T = any>(
       }
     );
 
-    return () => unsubscribe();
+    unsubscribeRef.current = unsubscribe;
+    return () => {
+      if (unsubscribeRef.current) unsubscribeRef.current();
+    };
   }, [memoizedTargetRefOrQuery, enabled]);
 
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
