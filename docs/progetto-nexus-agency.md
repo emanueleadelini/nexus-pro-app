@@ -1,4 +1,4 @@
-# Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.8
+# Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.9
 
 Documentazione definitiva dell'Hub Digitale integrato.
 
@@ -26,11 +26,15 @@ Sistema di approvazione contenuti per eliminare i colli di bottiglia:
 
 ---
 
-## 4. Architettura Identity-Aware (v5.8)
+## 4. Architettura Identity-Aware (v5.9)
 - **Global Provider**: Il `FirebaseProvider` carica automaticamente il profilo utente Firestore al login.
 - **Role-Based Gating**: Le query Firestore sono disabilitate (`null`) finché il ruolo dell'utente non è confermato.
 - **Multi-tenancy**: Isolamento rigoroso tramite `cliente_id` nel profilo utente.
-- **Deep Linking**: Notifiche strutturate con `riferimento_id` per navigazione diretta al contenuto.
+- **Rotte Admin**: 
+  - `/admin`: Dashboard direzionale.
+  - `/admin/clienti`: Portfolio tenant con monitoraggio budget post.
+  - `/admin/post`: Monitoraggio globale dei workflow di tutti i clienti.
+  - `/admin/notifiche`: Registro attività centralizzato.
 
 ---
 

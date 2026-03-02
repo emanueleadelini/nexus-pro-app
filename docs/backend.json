@@ -22,6 +22,7 @@
         "nome_azienda": { "type": "string" },
         "settore": { "type": "string" },
         "logo_url": { "type": "string" },
+        "email_riferimento": { "type": "string", "format": "email" },
         "post_totali": { "type": "number" },
         "post_usati": { "type": "number" },
         "include_business_plan": { "type": "boolean" },
@@ -63,6 +64,7 @@
         "ruolo_caricatore": { "type": "string", "enum": ["admin", "cliente"] },
         "stato_validazione": { "type": "string", "enum": ["in_attesa", "validato", "rifiutato"] },
         "destinazione": { "type": "string", "enum": ["social", "sito", "offline", "strategico"] },
+        "tipo_strategico": { "type": "string", "enum": ["piano_strategico", "piano_comunicazione", "business_plan", "business_model"] },
         "note_cliente": { "type": "string" },
         "creato_il": { "type": "string", "format": "date-time" }
       }
