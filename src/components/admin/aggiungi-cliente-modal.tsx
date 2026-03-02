@@ -49,29 +49,35 @@ export function AggiungiClienteModal({ isOpen, onClose }: Props) {
     const secondaryAuth = getAuth(secondaryApp);
 
     try {
+      // Creazione Tenant con moduli attivi di default
       const clientRef = await addDoc(collection(db, 'clienti'), {
         nome_azienda: formData.nome_azienda,
         settore: formData.settore,
         email_riferimento: formData.email_riferimento,
         post_totali: Number(formData.post_totali),
         post_usati: 0,
-        creato_il: serverTimestamp()
+        include_contratto: true,
+        include_visual_identity: true,
+        include_offline: true,
+        creato_il: serverTimestamp(),
+        aggiornato_il: serverTimestamp()
       });
 
       const clienteId = clientRef.id;
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.user_email, formData.user_password);
       const newUid = userCredential.user.uid;
 
+      // Creazione Profilo Utente collegato
       await setDoc(doc(db, 'users', newUid), {
         email: formData.user_email,
-        ruolo: 'referente', // Aggiornato per lo Sprint 1C (ex 'cliente')
+        ruolo: 'referente',
         cliente_id: clienteId,
         nomeAzienda: formData.nome_azienda,
         permessi: PERMESSI_DEFAULT['referente'],
         creatoIl: serverTimestamp()
       });
 
-      toast({ title: 'Cliente creato!', description: `L'azienda ${formData.nome_azienda} e l'utente ${formData.user_email} sono pronti.` });
+      toast({ title: 'Cliente creato!', description: `L'azienda ${formData.nome_azienda} è pronta con tutti i moduli attivi.` });
       setFormData({ nome_azienda: '', settore: '', email_riferimento: '', post_totali: 6, user_email: '', user_password: '' });
       onClose();
     } catch (error: any) {

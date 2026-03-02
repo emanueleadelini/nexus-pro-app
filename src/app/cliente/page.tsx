@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,9 @@ import {
   Fingerprint,
   Printer,
   FileSignature,
-  DownloadCloud
+  DownloadCloud,
+  AlertCircle,
+  Briefcase
 } from 'lucide-react';
 import { FeedInstagramPreview } from '@/components/feed-instagram-preview';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Material } from '@/types/material';
 
 export default function ClienteFeedPage() {
-  const { user, userData } = useUser();
+  const { user, userData, isUserDataLoading } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -36,7 +39,7 @@ export default function ClienteFeedPage() {
   const [loading, setLoading] = useState(false);
   const [materialUrlsMap, setMaterialUrlsMap] = useState<Record<string, string[]>>({});
 
-  // FIX: Usa cliente_id dal profilo caricato, MAI l'UID
+  // FONDAMENTALE: Usa il cliente_id dal profilo
   const clienteId = userData?.cliente_id;
 
   const clientDocRef = useMemoFirebase(() => {
@@ -46,8 +49,7 @@ export default function ClienteFeedPage() {
   const { data: clientData, isLoading: isClientLoading } = useDoc<any>(clientDocRef);
 
   const postsQuery = useMemoFirebase(() => {
-    // Gating rigoroso: se non c'è cliente_id, non fare query
-    if (!clienteId || clienteId === 'unknown' || clienteId.length > 25) return null;
+    if (!clienteId || clienteId === 'unknown') return null;
     return query(
       collection(db, 'clienti', clienteId, 'post'),
       where('stato', 'in', ['da_approvare', 'approvato', 'programmato', 'pubblicato']),
@@ -57,7 +59,7 @@ export default function ClienteFeedPage() {
   const { data: posts, isLoading: isPostsLoading } = useCollection<any>(postsQuery);
 
   const materialsQuery = useMemoFirebase(() => {
-    if (!clienteId || clienteId === 'unknown' || clienteId.length > 25) return null;
+    if (!clienteId || clienteId === 'unknown') return null;
     return query(collection(db, 'clienti', clienteId, 'materiali'), orderBy('creato_il', 'desc'));
   }, [db, clienteId]);
   const { data: materials } = useCollection<Material>(materialsQuery);
@@ -135,9 +137,13 @@ export default function ClienteFeedPage() {
     }
   };
 
-  if (isClientLoading || isPostsLoading) {
+  if (isUserDataLoading || isClientLoading || isPostsLoading) {
     return (
-      <div className="max-w-lg mx-auto space-y-8 pt-8 px-4">
+      <div className="max-w-lg mx-auto space-y-8 pt-12 px-4">
+        <div className="space-y-2 text-center mb-8">
+          <Skeleton className="h-8 w-48 mx-auto rounded-lg bg-slate-100" />
+          <Skeleton className="h-4 w-32 mx-auto rounded-lg bg-slate-100" />
+        </div>
         {[1, 2].map(i => (
           <div key={i} className="space-y-4">
             <Skeleton className="h-12 w-full rounded-xl bg-slate-100" />
@@ -148,28 +154,49 @@ export default function ClienteFeedPage() {
     );
   }
 
+  // CASO: Profilo esistente ma non collegato a un'azienda
+  if (userData && !clienteId) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 text-center space-y-6">
+        <div className="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center text-amber-600">
+          <AlertCircle className="w-10 h-10" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-headline font-bold text-slate-900">Configurazione Incompleta</h2>
+          <p className="text-slate-500 max-w-sm mx-auto">Il tuo account non è ancora collegato a un'azienda. Contatta l'agenzia per attivare il tuo Hub.</p>
+        </div>
+        <Button variant="outline" onClick={() => window.location.reload()} className="rounded-xl border-slate-200">Aggiorna Pagina</Button>
+      </div>
+    );
+  }
+
   const hasBrandDocSections = clientData?.include_contratto || clientData?.include_visual_identity || clientData?.include_offline;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 relative pb-24">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 relative pb-24 animate-in fade-in duration-700">
       <div className="max-w-4xl mx-auto space-y-10">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-headline font-bold text-slate-900">Il Tuo Hub Pro</h2>
-          <p className="text-slate-500 font-bold">Gestione Strategica & Assets</p>
+          <div className="flex justify-center mb-4">
+             <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
+               {clientData?.logo_url ? <img src={clientData.logo_url} className="w-full h-full object-contain p-1" /> : <Briefcase className="w-6 h-6 text-indigo-200" />}
+             </div>
+          </div>
+          <h2 className="text-3xl font-headline font-bold text-slate-900">{clientData?.nome_azienda || 'Il Tuo Hub Pro'}</h2>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Dashboard Strategica & Assets</p>
         </div>
 
         <Tabs defaultValue="feed" className="w-full">
-          <TabsList className={`grid w-full ${hasBrandDocSections ? 'grid-cols-2' : 'grid-cols-1'} max-w-md mx-auto bg-white border border-slate-200 h-12 p-1 rounded-2xl mb-8 shadow-sm`}>
-            <TabsTrigger value="feed" className="rounded-xl font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Feed & Approvazioni</TabsTrigger>
+          <TabsList className={`grid w-full ${hasBrandDocSections ? 'grid-cols-2' : 'grid-cols-1'} max-w-md mx-auto bg-white border border-slate-200 h-14 p-1.5 rounded-[1.25rem] mb-12 shadow-sm`}>
+            <TabsTrigger value="feed" className="rounded-xl font-bold text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">Feed & Approvazioni</TabsTrigger>
             {hasBrandDocSections && (
-              <TabsTrigger value="brand" className="rounded-xl font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Brand & Documenti</TabsTrigger>
+              <TabsTrigger value="brand" className="rounded-xl font-bold text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">Brand & Documenti</TabsTrigger>
             )}
           </TabsList>
 
-          <TabsContent value="feed" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="feed" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
             <div className="max-w-lg mx-auto space-y-12">
-              <div className="pt-4 flex justify-center">
-                <Badge variant="outline" className="bg-white text-indigo-600 border-indigo-100 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+              <div className="flex justify-center">
+                <Badge variant="outline" className="bg-white text-indigo-600 border-indigo-100 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
                   <Zap className="w-3 h-3 mr-1.5 fill-current" /> Silenzio Assenso Attivo (24h)
                 </Badge>
               </div>
@@ -190,16 +217,21 @@ export default function ClienteFeedPage() {
               ))}
 
               {(!posts || posts.length === 0) && (
-                <div className="text-center py-24 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm">
-                  <div className="w-20 h-20 mx-auto mb-6 bg-slate-50 rounded-full flex items-center justify-center"><Check className="w-10 h-10 text-emerald-500" /></div>
-                  <h3 className="text-slate-900 font-bold text-lg">Tutto approvato!</h3>
-                </div>
+                <Card className="text-center py-24 bg-white rounded-[2.5rem] border border-slate-200 border-dashed shadow-sm">
+                  <CardContent className="space-y-4">
+                    <div className="w-20 h-20 mx-auto bg-slate-50 rounded-full flex items-center justify-center"><Check className="w-10 h-10 text-emerald-500" /></div>
+                    <div className="space-y-1">
+                      <h3 className="text-slate-900 font-bold text-lg">In fase di produzione</h3>
+                      <p className="text-slate-400 text-sm">Il team sta preparando i tuoi prossimi contenuti.</p>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </TabsContent>
 
           {hasBrandDocSections && (
-            <TabsContent value="brand" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <TabsContent value="brand" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {clientData?.include_contratto && (
                   <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
@@ -252,6 +284,9 @@ export default function ClienteFeedPage() {
                           </Button>
                         </div>
                       ))}
+                      {materials?.filter(m => m.destinazione === 'visual_identity').length === 0 && (
+                        <p className="text-center py-8 text-xs font-bold text-slate-400 uppercase italic">In attesa di caricamento loghi...</p>
+                      )}
                     </CardContent>
                   </Card>
                 )}
