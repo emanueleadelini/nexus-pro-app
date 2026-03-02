@@ -14,7 +14,8 @@ service cloud.firestore {
     }
 
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data : {"ruolo": "nessuno"};
     }
 
     function isSuperAdmin() {
@@ -30,11 +31,13 @@ service cloud.firestore {
     }
 
     function isReferente(clientId) {
-      return isSignedIn() && getUserData().ruolo == 'referente' && getUserData().cliente_id == clientId;
+      let data = getUserData();
+      return isSignedIn() && data.ruolo == 'referente' && data.cliente_id == clientId;
     }
 
     function isCollaboratore(clientId) {
-      return isSignedIn() && getUserData().ruolo == 'collaboratore' && getUserData().cliente_id == clientId;
+      let data = getUserData();
+      return isSignedIn() && data.ruolo == 'collaboratore' && data.cliente_id == clientId;
     }
 
     function isClient(clientId) {
@@ -48,10 +51,6 @@ service cloud.firestore {
     // --- COLLECTION GROUP RULES (Necessarie per Dashboard Admin) ---
     
     match /{path=**}/post/{postId} {
-      allow list: if isAgency();
-    }
-
-    match /{path=**}/notifiche/{notificaId} {
       allow list: if isAgency();
     }
 

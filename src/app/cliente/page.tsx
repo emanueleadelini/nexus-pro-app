@@ -1,31 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { query, collection, where, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  Heart, 
-  MessageCircle, 
-  Send, 
-  Bookmark, 
-  MoreHorizontal, 
   Check, 
   X, 
-  Clock,
-  AlertCircle,
-  Timer,
-  LayoutGrid,
   Zap,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { it } from 'date-fns/locale';
 import { FeedInstagramPreview } from '@/components/feed-instagram-preview';
 import { useToast } from '@/hooks/use-toast';
 
@@ -95,7 +84,7 @@ export default function ClienteFeedPage() {
         })
       });
       
-      // Notifica all'agenzia
+      // Segnalazione all'agenzia
       await updateDoc(doc(db, 'clienti', clienteId), {
         richiesta_attenzione: true
       });
@@ -127,13 +116,12 @@ export default function ClienteFeedPage() {
   return (
     <div className="min-h-screen bg-slate-950 py-12 px-4 relative">
       <div className="max-w-lg mx-auto space-y-10">
-        {/* Header Feed */}
         <div className="text-center space-y-2 animate-in fade-in slide-in-from-top-4 duration-700">
           <h2 className="text-3xl font-headline font-bold text-white">Hub Contenuti</h2>
           <p className="text-slate-400 text-sm font-medium">Strategia & Approvazione Real-time</p>
           <div className="pt-4 flex justify-center">
             <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              <Zap className="w-3 h-3 mr-1.5 fill-current" /> Silenzio Assenso Attivo
+              <Zap className="w-3 h-3 mr-1.5 fill-current" /> Silenzio Assenso Attivo (24h)
             </Badge>
           </div>
         </div>
@@ -165,13 +153,12 @@ export default function ClienteFeedPage() {
         </div>
       </div>
 
-      {/* Dialog Modifiche */}
       <Dialog open={!!selectedPost} onOpenChange={() => setSelectedPost(null)}>
         <DialogContent className="bg-slate-900 border-white/10 text-white rounded-3xl max-w-sm sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-headline font-bold">Feedback Strategico</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Indica chiaramente quali modifiche desideri apportare al post <span className="text-indigo-400 font-bold">"{selectedPost?.titolo}"</span>.
+              Indica chiaramente quali modifiche desideri apportare al post.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
@@ -180,7 +167,7 @@ export default function ClienteFeedPage() {
               <Textarea
                 value={noteModifica}
                 onChange={(e) => setNoteModifica(e.target.value)}
-                placeholder="Es: Cambia il tono della call-to-action, usa un font più leggibile..."
+                placeholder="Es: Cambia il tono della call-to-action..."
                 className="bg-slate-800/50 border-white/10 text-white min-h-[120px] rounded-2xl focus:ring-indigo-500/20"
               />
             </div>
@@ -188,12 +175,12 @@ export default function ClienteFeedPage() {
             <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex gap-3">
               <Info className="w-5 h-5 text-amber-400 shrink-0" />
               <p className="text-[11px] text-amber-200 leading-relaxed">
-                Inviando questa richiesta, il post tornerà in stato di <span className="font-bold">Revisione Interna</span>. Il nostro team riceverà una notifica immediata.
+                Inviando questa richiesta, il post tornerà in stato di <span className="font-bold">Revisione</span>.
               </p>
             </div>
           </div>
           <DialogFooter className="gap-3 sm:gap-0">
-            <Button variant="ghost" onClick={() => setSelectedPost(null)} className="text-slate-400 hover:text-white rounded-xl">
+            <Button variant="ghost" onClick={() => setSelectedPost(null)} className="text-slate-400 hover:text-white">
               Annulla
             </Button>
             <Button 

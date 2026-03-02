@@ -1,11 +1,12 @@
-
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where, collectionGroup } from 'firebase/firestore';
+import { query, collection, where, orderBy, limit, doc, getDoc, collectionGroup } from 'firebase/firestore';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Users, 
@@ -24,31 +25,47 @@ import { STATO_POST_LABELS, STATO_POST_COLORS } from '@/types/post';
 export default function AdminDashboard() {
   const { user } = useUser();
   const db = useFirestore();
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
-  // Memoizzazione query clienti
+  // Verifica ruolo e autorizzazione prima di caricare le query
+  useEffect(() => {
+    if (!user) return;
+    const checkRole = async () => {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const ruolo = userDoc.data()?.ruolo;
+      if (ruolo === 'super_admin' || ruolo === 'operatore' || ruolo === 'admin') {
+        setIsAuthorized(true);
+      } else {
+        router.push('/cliente');
+      }
+    };
+    checkRole();
+  }, [user, db, router]);
+
+  // Query Clienti (Gated by isAuthorized)
   const clientsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !isAuthorized) return null;
     return query(collection(db, 'clienti'), orderBy('creato_il', 'desc'), limit(5));
-  }, [db, user]);
+  }, [db, user, isAuthorized]);
   const { data: clients, isLoading: isClientsLoading } = useCollection<any>(clientsQuery);
 
-  // Memoizzazione query post in attesa (cross-client via collectionGroup)
+  // Query Post in Attesa (Gated by isAuthorized)
   const pendingPostsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    // IMPORTANTE: Richiede indice su collectionGroup 'post' con stato == 'da_approvare'
+    if (!user || !isAuthorized) return null;
     return query(
       collectionGroup(db, 'post'), 
       where('stato', '==', 'da_approvare'),
       limit(5)
     );
-  }, [db, user]);
+  }, [db, user, isAuthorized]);
   const { data: pendingPosts, isLoading: isPostsLoading } = useCollection<any>(pendingPostsQuery);
 
   const totalUsed = clients?.reduce((acc: number, c: any) => acc + (c.post_usati || 0), 0) || 0;
 
-  if (isClientsLoading) {
+  if (!isAuthorized || isClientsLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl bg-white/5" />)}
         </div>
@@ -62,7 +79,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-4xl font-headline font-bold text-white mb-2">Hub Direzionale</h1>
@@ -75,7 +91,6 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="glass-card border-none overflow-hidden group hover:border-white/10 transition-all">
           <CardContent className="p-6">
@@ -131,7 +146,6 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Ultimi Clienti */}
         <Card className="glass-card border-none">
           <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-6">
             <CardTitle className="text-lg font-headline flex items-center gap-2 text-white">
@@ -164,14 +178,10 @@ export default function AdminDashboard() {
                   </div>
                 </Link>
               ))}
-              {(!clients || clients.length === 0) && (
-                <div className="p-10 text-center text-slate-500 italic text-sm">Nessun cliente registrato.</div>
-              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Post in Attesa Cross-Client */}
         <Card className="glass-card border-none">
           <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-6">
             <CardTitle className="text-lg font-headline flex items-center gap-2 text-white">

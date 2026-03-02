@@ -30,7 +30,7 @@ Sistema di approvazione contenuti per eliminare i colli di bottiglia:
 - **Multi-tenancy**: Isolamento tramite `cliente_id` nel profilo utente.
 - **Collection Group Security**: Regole di accesso globale per `post` e `notifiche` abilitate per il ruolo Agency.
 - **Indici Ottimizzati**: Richiesti per `collectionGroup` (Dashboard Admin) e query ordinate per data.
-- **Error Handling**: Sistema di Error Boundaries centralizzato (`error.tsx`) per intercettare problemi di indici o permessi.
+- **Error Handling**: Sistema di Error Boundaries centralizzato per intercettare problemi di indici o permessi.
 
 ---
 
