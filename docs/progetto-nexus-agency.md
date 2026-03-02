@@ -1,4 +1,3 @@
-
 # Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.7
 
 Documentazione definitiva dell'Hub Digitale integrato.
@@ -29,14 +28,15 @@ Sistema di approvazione contenuti per eliminare i colli di bottiglia:
 
 ## 4. Architettura Dati & Sicurezza
 - **Multi-tenancy**: Isolamento tramite `cliente_id` nel profilo utente.
-- **Indici Ottimizzati**: Richiesti per `collectionGroup` (Dashboard Admin) e query ordinate.
-- **Error Handling**: Sistema di Error Boundaries centralizzato per intercettare problemi di indici o permessi senza crashare l'app.
+- **Collection Group Security**: Regole di accesso globale per `post` e `notifiche` abilitate per il ruolo Agency.
+- **Indici Ottimizzati**: Richiesti per `collectionGroup` (Dashboard Admin) e query ordinate per data.
+- **Error Handling**: Sistema di Error Boundaries centralizzato (`error.tsx`) per intercettare problemi di indici o permessi.
 
 ---
 
 ## 5. Billing & Infrastruttura
 - **Account Centralizzato**: Google Cloud Billing agenzia per tutti i progetti tenant.
-- **Quota Monitor**: Analytics real-time sull'uso dei crediti post.
+- **Quota Monitor**: Analytics real-time sull'uso dei crediti post e chiamate AI.
 
 ---
 *Proprietà Intellettuale - AD next lab - 2024*

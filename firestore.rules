@@ -3,8 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * NEXUS PRO RULES V5.3 (SaaS Ready)
-     * Refactored notifications as subcollections of users for enhanced security.
+     * NEXUS PRO RULES V5.7
+     * Supporto per Collection Group queries e sicurezza multi-tenant.
      */
 
     // --- HELPER FUNCTIONS ---
@@ -18,7 +18,7 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return isSignedIn() && getUserData().ruolo == 'super_admin';
+      return isSignedIn() && (getUserData().ruolo == 'super_admin' || getUserData().ruolo == 'admin');
     }
 
     function isOperatore() {
@@ -45,7 +45,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- RULES ---
+    // --- COLLECTION GROUP RULES (Necessarie per Dashboard Admin) ---
+    
+    match /{path=**}/post/{postId} {
+      allow list: if isAgency();
+    }
+
+    match /{path=**}/notifiche/{notificaId} {
+      allow list: if isAgency();
+    }
+
+    // --- STANDARD RULES ---
 
     match /users/{uid} {
       allow get: if isOwner(uid) || isAgency();
@@ -54,7 +64,6 @@ service cloud.firestore {
       allow update: if (isOwner(uid) && request.resource.data.ruolo == resource.data.ruolo) || isSuperAdmin();
       allow delete: if isSuperAdmin();
 
-      // Sottocollezione notifiche (Isolamento Totale)
       match /notifiche/{notificaId} {
         allow read: if isOwner(uid) || isAgency();
         allow create: if isSignedIn(); 
@@ -71,13 +80,10 @@ service cloud.firestore {
       match /post/{postId} {
         allow get, list: if isClient(clienteId) || isAgency();
         allow create: if isAgency();
-        
-        // Workflow di approvazione: il referente può SOLO cambiare lo stato e loggare la transizione
         allow update: if isAgency() || 
           (isReferente(clienteId) && 
            resource.data.stato == 'da_approvare' && 
            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stato', 'storico_stati', 'aggiornato_il']));
-        
         allow delete: if isAgency();
         
         match /commenti/{commentoId} {
