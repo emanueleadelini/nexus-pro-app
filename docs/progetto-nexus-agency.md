@@ -1,4 +1,4 @@
-# Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.5
+# Nexus Pro (AD Next Lab) - Manuale Tecnico Master v5.6
 
 Documentazione definitiva dell'Hub Digitale integrato.
 
@@ -35,32 +35,40 @@ Il cuore della piattaforma è il processo di approvazione contenuti:
 4. **Azioni Cliente**: 
    - **Approva**: Il post passa a `approvato`.
    - **Modifiche**: Il cliente inserisce note e il post torna in `revisione`.
-5. **Silenzio Assenso**: Se il cliente non agisce entro le 24h, l'agenzia è autorizzata alla pubblicazione automatica.
+5. **Silenzio Assenso**: Se il cliente non agisce entro le 24h, l'agenzia è autorizzata alla pubblicazione automatica (gestita tramite Cloud Functions).
 
 ---
 
 ## 4. Gestione Asset & Materiali
 - **Destinazioni**: Social, Sito Web, Offline, Strategico.
-- **Input Cliente**: Include campo Note e selettore Destinazione.
+- **Input Cliente**: Include campo Note e selettore Destinazione (Social, Sito, Stampa).
 - **Validazione Admin**: L'admin può validare o rifiutare gli asset caricati dal cliente.
 
 ---
 
-## 5. Struttura Database (Firestore)
+## 5. Infrastruttura & Billing
+### 5.1 Google Cloud Billing
+- **Centralizzazione**: Tutti i progetti Nexus Pro sono collegati a un unico account di fatturazione agenzia (AD Next Lab).
+- **Tracciabilità**: I costi sono monitorati per Project ID per permettere il calcolo del margine per ogni tenant.
+- **Scalabilità**: L'uso del piano Blaze di Firebase garantisce il supporto al "Pay-as-you-go".
 
-### 5.1 Collezioni Primarie
+---
+
+## 6. Struttura Database (Firestore)
+
+### 6.1 Collezioni Primarie
 - `/users/{uid}`: Profili utenti con ruoli (`super_admin`, `operatore`, `referente`, `collaboratore`).
 - `/clienti/{clienteId}`: Dati azienda, budget post (usati/totali) e logo branding.
 
-### 5.2 Sottocollezioni
-- `/users/{uid}/notifiche/{notificaId}`: Log notifiche personale.
+### 6.2 Sottocollezioni
+- `/users/{uid}/notifiche/{notificaId}`: Log notifiche personale con supporto a Deep Linking (`riferimento_id`).
 - `/clienti/{clienteId}/post/{postId}`: Workflow editoriale, storico stati e versionamento.
 - `/clienti/{clienteId}/materiali/{materialeId}`: Asset creativi e documenti strategici.
 - `/clienti/{clienteId}/post/{postId}/commenti/{commentoId}`: Chat contestuale per ogni contenuto.
 
 ---
 
-## 6. Integrazione AI
+## 7. Integrazione AI
 - **Gemini Flash 2.5**: Utilizzato tramite Genkit per la generazione di bozze social (Titolo + Testo) basate sul settore e sul tono di voce del cliente.
 
 ---
