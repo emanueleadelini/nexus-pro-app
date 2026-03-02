@@ -13,22 +13,16 @@ import {
 import Link from 'next/link';
 
 export default function LandingPage() {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, isAdmin } = useUser();
   const router = useRouter();
 
   const handleAdminRedirect = () => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    router.push('/admin');
+    if (!user) { router.push('/login'); return; }
+    router.push(isAdmin ? '/admin' : '/cliente');
   };
 
   const handleClienteRedirect = () => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    if (!user) { router.push('/login'); return; }
     router.push('/cliente');
   };
 
@@ -70,7 +64,7 @@ export default function LandingPage() {
       <section className="min-h-screen flex items-center pt-20 pb-24 px-6 md:px-20 text-center relative overflow-hidden bg-slate-50">
         <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-10 duration-1000">
           <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-full text-xs font-bold border border-indigo-100 uppercase tracking-widest mx-auto">
-            <Sparkles className="w-3.5 h-3.5" /> Nexus Pro v7.0: Leggibilità Totale
+            <Sparkles className="w-3.5 h-3.5" /> Nexus Pro: Leggibilità Totale
           </div>
           
           <div className="space-y-6">
@@ -79,7 +73,7 @@ export default function LandingPage() {
               <span className="gradient-text">AD next lab.</span>
             </h1>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-medium">
-              Gestione strategica, workflow AI-driven e archivio asset tutto in un unico posto. Riservato ai partner e al team ADNext.
+              Gestione strategica, workflow AI-driven e archivio asset tutto in un unico posto.
             </p>
           </div>
 
@@ -115,10 +109,6 @@ export default function LandingPage() {
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
             © {new Date().getFullYear()} Hub Digitale &bull; Progettato per l'eccellenza
           </p>
-          <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            <Link href="#" className="hover:text-indigo-600 transition-colors">Privacy</Link>
-            <Link href="#" className="hover:text-indigo-600 transition-colors">Supporto</Link>
-          </div>
         </div>
       </footer>
     </div>
