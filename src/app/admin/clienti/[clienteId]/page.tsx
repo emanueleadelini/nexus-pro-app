@@ -29,10 +29,10 @@ import {
   Download,
   Loader2,
   Fingerprint,
-  Printer,
   FileSignature,
   DownloadCloud,
-  BrainCircuit
+  BrainCircuit,
+  Printer
 } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
@@ -211,7 +211,7 @@ export default function ClienteDettaglio() {
                 <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl bg-white">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl font-headline font-bold text-slate-900">Sei sicuro?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-slate-500 font-medium">Azione irreversibile per {client.nome_azienda}.</AlertDialogDescription>
+                    <AlertDialogDescription className="text-slate-500 font-medium">Azione irreversibile per {client.nome_azienda}. Verranno eliminati tutti i dati associati.</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="gap-3">
                     <AlertDialogCancel className="rounded-xl font-bold">Annulla</AlertDialogCancel>
@@ -233,7 +233,7 @@ export default function ClienteDettaglio() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 space-y-8">
           <Tabs defaultValue="list">
-            <TabsList className="bg-transparent border-b border-slate-100 rounded-none h-14 w-full justify-start p-0 mb-6 gap-8">
+            <TabsList className="bg-transparent border-b border-slate-100 rounded-none h-14 w-full justify-start p-0 mb-6 gap-8 overflow-x-auto overflow-y-hidden">
               <TabsTrigger value="list" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Workflow Post</TabsTrigger>
               <TabsTrigger value="visual" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Calendario Visuale</TabsTrigger>
               <TabsTrigger value="training" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400 flex gap-2"><BrainCircuit className="w-4 h-4" /> Brand DNA (AI)</TabsTrigger>
@@ -242,7 +242,7 @@ export default function ClienteDettaglio() {
 
             <TabsContent value="list" className="space-y-4">
                {posts?.map(post => (
-                 <Card key={post.id} className={`glass-card border-none rounded-3xl overflow-hidden hover:shadow-lg transition-all ${post.stato === 'da_approvare' ? 'ring-2 ring-amber-400/30' : ''}`}>
+                 <Card key={post.id} className={`glass-card border-none rounded-3xl overflow-hidden hover:shadow-lg transition-all ${post.id === postPerCommenti ? 'ring-2 ring-indigo-600' : ''}`}>
                     <CardHeader className="pb-3 flex flex-row items-center justify-between p-6">
                       <div className="flex items-center gap-3">
                         <Badge className={`${STATO_POST_COLORS[post.stato].bg} ${STATO_POST_COLORS[post.stato].text} border-none text-[10px] font-black uppercase tracking-widest px-3 py-1`}>
@@ -294,28 +294,42 @@ export default function ClienteDettaglio() {
 
             <TabsContent value="assets" className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-indigo-50 border-b border-indigo-100"><CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 flex items-center gap-2"><Fingerprint className="w-4 h-4" /> Visual Identity (Loghi)</CardTitle></CardHeader>
+                <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
+                  <CardHeader className="bg-indigo-50 border-b border-indigo-100">
+                    <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 flex items-center gap-2">
+                      <Fingerprint className="w-4 h-4" /> Visual Identity (Loghi)
+                    </CardTitle>
+                  </CardHeader>
                   <CardContent className="p-4 space-y-3">
                     {materials?.filter(m => m.destinazione === 'visual_identity').map(m => (
                       <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
                         <div className="flex items-center gap-3">
                           <div className="bg-white p-2 rounded-lg border border-slate-200"><Fingerprint className="w-4 h-4 text-indigo-600" /></div>
-                          <div><p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">{m.nome_file}</p></div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">{m.nome_file}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                          </div>
                         </div>
                         <Button variant="ghost" size="icon" className="text-indigo-600"><DownloadCloud className="w-4 h-4" /></Button>
                       </div>
                     ))}
                   </CardContent>
                 </Card>
-                <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-slate-900 border-b border-slate-800"><CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-white flex items-center gap-2"><FileSignature className="w-4 h-4" /> Contratto & Accordi</CardTitle></CardHeader>
+                <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
+                  <CardHeader className="bg-slate-900 border-b border-slate-800">
+                    <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
+                      <FileSignature className="w-4 h-4" /> Contratto & Accordi
+                    </CardTitle>
+                  </CardHeader>
                   <CardContent className="p-4 space-y-3">
                     {materials?.filter(m => m.destinazione === 'contratto').map(m => (
                       <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
                         <div className="flex items-center gap-3">
                           <div className="bg-white p-2 rounded-lg border border-slate-200"><FileSignature className="w-4 h-4 text-slate-900" /></div>
-                          <div><p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">{m.nome_file}</p></div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">{m.nome_file}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                          </div>
                         </div>
                         <Button variant="ghost" size="icon" className="text-slate-900"><DownloadCloud className="w-4 h-4" /></Button>
                       </div>
@@ -323,6 +337,42 @@ export default function ClienteDettaglio() {
                   </CardContent>
                 </Card>
               </div>
+
+              <Card className="glass-card rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
+                <CardHeader className="bg-emerald-50 p-8 border-b border-emerald-100">
+                  <CardTitle className="text-emerald-900 font-headline font-bold flex items-center gap-3">
+                    <Printer className="w-6 h-6 text-emerald-600" /> Grafiche & Materiali Offline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {['brochure', 'volantino', 'bigliettini', 'gadget', '6x3', '3x6', 'altro'].map(type => {
+                      const typeMaterials = materials?.filter(m => m.destinazione === 'offline' && m.tipo_offline === type);
+                      return (
+                        <div key={type} className="space-y-4">
+                          <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2">{type}</h5>
+                          <div className="space-y-3">
+                            {typeMaterials?.map(m => (
+                              <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-bold text-slate-900 truncate">{m.nome_file}</p>
+                                  <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-100 rounded-lg">
+                                  <DownloadCloud className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            {(!typeMaterials || typeMaterials.length === 0) && (
+                              <p className="text-[9px] font-bold text-slate-300 uppercase italic">Nessun asset {type}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -339,7 +389,7 @@ export default function ClienteDettaglio() {
                 <div className="flex justify-between items-end"><span className="text-[10px] font-black text-slate-400 uppercase">Utilizzo</span><span className="text-sm font-black text-slate-900">{client.post_usati} / {client.post_totali}</span></div>
                 <Progress value={usagePercent} className="h-2.5 bg-slate-100 rounded-full" />
               </div>
-              <Button variant="outline" className="w-full h-12 rounded-xl text-indigo-600 border-indigo-100 font-bold hover:bg-indigo-50" onClick={() => setIsPianoOpen(true)}>Gestisci Limiti & Moduli</Button>
+              <Button variant="outline" className="w-full h-12 rounded-xl text-indigo-600 border-indigo-100 font-bold hover:bg-indigo-50" onClick={() => setIsPianoOpen(true)}>Gestisci Piano & Sezioni</Button>
             </CardContent>
           </Card>
         </div>

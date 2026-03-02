@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -56,9 +57,9 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (err: FirestoreError) => {
-        // Silenzia l'errore di permessi durante il caricamento iniziale per evitare crash
+        // Silenzia l'errore di permessi durante il caricamento iniziale per evitare crash visivi
         if (err.code === 'permission-denied') {
-          console.warn('Permesso negato per la query, riprovo al prossimo cambio stato...');
+          console.warn('Permesso negato silenziato per la query:', memoizedTargetRefOrQuery);
           setData(null);
           setIsLoading(false);
           return;
@@ -84,7 +85,7 @@ export function useCollection<T = any>(
   }, [memoizedTargetRefOrQuery, enabled]);
 
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error('Query non stabilizzata con useMemoFirebase. Rischio loop infinito.');
   }
 
   return { data, isLoading, error };
