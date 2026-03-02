@@ -2,10 +2,11 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot, collection, query, limit } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { UserProfile } from '@/types/user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -88,6 +89,22 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     return () => unsubscribeData();
   }, [authState.user, firestore]);
+
+  // QUERY GLOBALI PROTETTE (IDENTITY-AWARE)
+  const isAdmin = ['super_admin', 'admin', 'operatore'].includes(authState.userData?.ruolo || '');
+  
+  const usersQuery = useMemoFirebase(() => {
+    if (!isAdmin || !firestore) return null;
+    return query(collection(firestore, 'users'), limit(100));
+  }, [firestore, isAdmin]);
+
+  const clientsQuery = useMemoFirebase(() => {
+    if (!isAdmin || !firestore) return null;
+    return query(collection(firestore, 'clienti'), limit(100));
+  }, [firestore, isAdmin]);
+
+  const { data: globalUsers } = useCollection(usersQuery, { enabled: isAdmin });
+  const { data: globalClients } = useCollection(clientsQuery, { enabled: isAdmin });
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);

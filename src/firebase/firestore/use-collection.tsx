@@ -43,20 +43,20 @@ export function useCollection<T = any>(
       return;
     }
 
-    // GUARDIA 2: Verifica percorso "unknown" o vuoto
+    // GUARDIA 2: Verifica percorso "unknown" o vuoto per evitare crash rules
     try {
       const path = (memoizedTargetRefOrQuery as any).type === 'collection'
         ? (memoizedTargetRefOrQuery as CollectionReference).path
         : (memoizedTargetRefOrQuery as any)._query?.path?.canonicalString?.() || '';
       
-      if (!path || path === 'unknown' || path.includes('unknown') || path === '/databases/(default)/documents') {
+      if (!path || path === 'unknown' || path.includes('unknown') || path === '/databases/(default)/documents' || path === '') {
         console.warn('useCollection: query saltata per percorso non valido:', path);
         setData(null);
         setIsLoading(false);
         return;
       }
     } catch (e) {
-      // Fallback sicuro
+      // Fallback sicuro se l'ispezione del path fallisce
     }
 
     if (unsubscribeRef.current) unsubscribeRef.current();
@@ -76,9 +76,9 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (err: FirestoreError) => {
-        // Silenzia l'errore di permessi per evitare il crash visivo
+        // GUARDIA 3: Silenzia permission-denied durante il caricamento profilo/login
         if (err.code === 'permission-denied') {
-          console.warn('useCollection: Permesso negato silenziato.');
+          console.warn('useCollection: Permesso negato silenziato per transizione stato.');
           setData(null);
           setIsLoading(false);
           return;

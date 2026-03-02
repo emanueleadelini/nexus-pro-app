@@ -1,21 +1,19 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { 
   ShieldCheck, 
   Sparkles, 
   ArrowRight,
-  LayoutDashboard,
   Users,
   ShieldAlert
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LandingPage() {
-  const { user, isUserLoading, isAdmin, isCliente } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   const handleAdminRedirect = () => {
@@ -97,20 +95,6 @@ export default function LandingPage() {
             >
               Area Riservata Clienti
             </Button>
-          </div>
-
-          {/* Minimal Stats for Trust */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-20 pt-12 border-t border-slate-200/60">
-            {[
-              { label: "Partner Attivi", val: "200+" },
-              { label: "Post Generati", val: "10k+" },
-              { label: "Focus AI", val: "100%" }
-            ].map((s, i) => (
-              <div key={i} className="space-y-1">
-                <div className="text-2xl font-bold text-slate-900">{s.val}</div>
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{s.label}</div>
-              </div>
-            ))}
           </div>
         </div>
 

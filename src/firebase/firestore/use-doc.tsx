@@ -1,4 +1,3 @@
-
 'use client';
     
 import { useState, useEffect } from 'react';
@@ -28,7 +27,7 @@ export function useDoc<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    if (!memoizedDocRef) {
+    if (!memoizedDocRef || memoizedDocRef.path.includes('unknown')) {
       setData(null);
       setIsLoading(false);
       setError(null);
@@ -51,7 +50,7 @@ export function useDoc<T = any>(
       },
       (err: FirestoreError) => {
         if (err.code === 'permission-denied') {
-          console.warn('Permesso negato silenziato per il documento:', memoizedDocRef.path);
+          console.warn('useDoc: Permesso negato silenziato per:', memoizedDocRef.path);
           setData(null);
           setIsLoading(false);
           return;
