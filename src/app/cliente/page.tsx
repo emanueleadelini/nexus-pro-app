@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { query, collection, where, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, Timestamp } from 'firebase/firestore';
+import { query, collection, where, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, Timestamp, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -28,6 +28,7 @@ export default function ClienteFeedPage() {
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [noteModifica, setNoteModifica] = useState('');
   const [loading, setLoading] = useState(false);
+  const [materialUrlsMap, setMaterialUrlsMap] = useState<Record<string, string[]>>({});
 
   const clienteId = userData?.cliente_id;
 
@@ -47,6 +48,32 @@ export default function ClienteFeedPage() {
   }, [db, clienteId, isCliente]);
 
   const { data: posts, isLoading: isPostsLoading } = useCollection<any>(postsQuery);
+
+  // Caricamento asincrono degli asset per ogni post
+  useEffect(() => {
+    if (!posts || !clienteId) return;
+
+    const fetchAssets = async () => {
+      const newUrlsMap: Record<string, string[]> = {};
+      
+      for (const post of posts) {
+        const assetIds = post.materiali_ids || (post.materiale_id ? [post.materiale_id] : []);
+        if (assetIds.length === 0) continue;
+
+        // In una app reale useremmo Firebase Storage URL. 
+        // Qui simuliamo recuperando i documenti materiali o usando placeholder.
+        const urls: string[] = [];
+        for (const id of assetIds) {
+          // Simulazione URL basata su ID o recupero da collezione materiali
+          urls.push(`https://picsum.photos/seed/${id}/800/800`);
+        }
+        newUrlsMap[post.id] = urls;
+      }
+      setMaterialUrlsMap(newUrlsMap);
+    };
+
+    fetchAssets();
+  }, [posts, clienteId]);
 
   useEffect(() => {
     if (highlightPostId && posts) {
@@ -152,6 +179,7 @@ export default function ClienteFeedPage() {
                 onApprove={() => handleApprova(post)}
                 onReject={() => setSelectedPost(post)}
                 onComment={() => setSelectedPost(post)}
+                materialUrls={materialUrlsMap[post.id] || []}
               />
             </div>
           ))}

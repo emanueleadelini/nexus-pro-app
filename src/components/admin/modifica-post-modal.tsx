@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { doc, updateDoc, serverTimestamp, Timestamp, collection, query, where, arrayUnion } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -28,8 +29,8 @@ export function ModificaPostModal({ isOpen, onClose, clienteId, post }: Props) {
     titolo: '',
     testo: '',
     data_pubblicazione: '',
-    materiale_id: '',
-    piattaforma: 'instagram' as PiattaformaPost,
+    materiali_ids: [] as string[],
+    piattaforme: [] as PiattaformaPost[],
     formato: 'immagine_singola' as FormatoPost,
   });
 
@@ -56,16 +57,25 @@ export function ModificaPostModal({ isOpen, onClose, clienteId, post }: Props) {
         titolo: post.titolo,
         testo: post.testo,
         data_pubblicazione: dateStr,
-        materiale_id: post.materiale_id || 'none',
-        piattaforma: post.piattaforma || 'instagram',
+        materiali_ids: post.materiali_ids || (post.materiale_id ? [post.materiale_id] : []),
+        piattaforme: post.piattaforme || (post.piattaforma ? [post.piattaforma] : []),
         formato: post.formato || 'immagine_singola',
       });
     }
   }, [post]);
 
+  const togglePiattaforma = (id: PiattaformaPost) => {
+    setFormData(prev => ({
+      ...prev,
+      piattaforme: prev.piattaforme.includes(id) 
+        ? prev.piattaforme.filter(p => p !== id) 
+        : [...prev.piattaforme, id]
+    }));
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!post || !formData.titolo || !formData.testo || !user) return;
+    if (!post || !formData.titolo || !formData.testo || !user || formData.piattaforme.length === 0) return;
 
     setLoading(true);
     try {
@@ -76,13 +86,14 @@ export function ModificaPostModal({ isOpen, onClose, clienteId, post }: Props) {
         titolo: formData.titolo,
         testo: formData.testo,
         data_pubblicazione: formData.data_pubblicazione ? Timestamp.fromDate(new Date(formData.data_pubblicazione)) : null,
-        materiale_id: formData.materiale_id === 'none' ? null : formData.materiale_id,
-        piattaforma: formData.piattaforma,
+        materiali_ids: formData.materiali_ids,
+        materiale_id: formData.materiali_ids[0] || null,
+        piattaforme: formData.piattaforme,
+        piattaforma: formData.piattaforme[0],
         formato: formData.formato,
         aggiornato_il: serverTimestamp(),
       };
 
-      // NEXUS PRO: Salvataggio versione se il testo è cambiato
       if (isTextChanged) {
         updateData.versioni = arrayUnion({
           titolo: post.titolo,
@@ -109,35 +120,40 @@ export function ModificaPostModal({ isOpen, onClose, clienteId, post }: Props) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Edit3 className="w-5 h-5 text-indigo-600" /> Modifica Strategica
+          <DialogTitle className="flex items-center gap-2 text-indigo-600">
+            <Edit3 className="w-5 h-5" /> Modifica Post Multi-Social
           </DialogTitle>
-          <DialogDescription>Ogni modifica creerà una nuova versione nel log storico.</DialogDescription>
+          <DialogDescription>Gestisci canali e asset di questo contenuto.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleUpdate} className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1"><Share2 className="w-3 h-3" /> Piattaforma</Label>
-              <Select value={formData.piattaforma} onValueChange={(v: any) => setFormData({...formData, piattaforma: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PIATTAFORMA_LABELS).map(([id, label]) => (
-                    <SelectItem key={id} value={id}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <form onSubmit={handleUpdate} className="space-y-6 py-4">
+          <div className="space-y-3">
+            <Label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Piattaforme Social</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Object.entries(PIATTAFORMA_LABELS).map(([id, label]) => (
+                <div key={id} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`edit-plat-${id}`} 
+                    checked={formData.piattaforme.includes(id as PiattaformaPost)}
+                    onCheckedChange={() => togglePiattaforma(id as PiattaformaPost)}
+                  />
+                  <Label htmlFor={`edit-plat-${id}`} className="text-sm font-medium cursor-pointer">{label}</Label>
+                </div>
+              ))}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1"><Layout className="w-3 h-3" /> Formato</Label>
               <Select value={formData.formato} onValueChange={(v: any) => setFormData({...formData, formato: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(FORMATO_LABELS).map(([id, label]) => (
-                    <SelectItem key={id} value={id}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectContent>{Object.entries(FORMATO_LABELS).map(([id, label]) => <SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Pubblicazione</Label>
+              <Input type="datetime-local" value={formData.data_pubblicazione} onChange={(e) => setFormData({...formData, data_pubblicazione: e.target.value})} />
             </div>
           </div>
 
@@ -151,27 +167,10 @@ export function ModificaPostModal({ isOpen, onClose, clienteId, post }: Props) {
             <Textarea id="edit-testo" value={formData.testo} onChange={(e) => setFormData({...formData, testo: e.target.value})} className="min-h-[150px]" required />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Pubblicazione</Label>
-              <Input type="datetime-local" value={formData.data_pubblicazione} onChange={(e) => setFormData({...formData, data_pubblicazione: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1"><FileImage className="w-3 h-3" /> Asset</Label>
-              <Select value={formData.materiale_id} onValueChange={(val) => setFormData({...formData, materiale_id: val})}>
-                <SelectTrigger><SelectValue placeholder="Seleziona asset" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nessun asset</SelectItem>
-                  {materials?.map((m) => <SelectItem key={m.id} value={m.id}>{m.nome_file}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>Annulla</Button>
             <Button type="submit" disabled={loading} className="bg-indigo-600">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Aggiorna Versione'}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva Modifiche'}
             </Button>
           </DialogFooter>
         </form>

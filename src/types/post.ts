@@ -77,10 +77,15 @@ export interface Post {
   data_pubblicazione: Timestamp | null;
   creato_il: Timestamp;
   aggiornato_il: Timestamp;
-  materiale_id?: string | null;
   
-  // Pro Features (Sprint 1C & Workflow 2.0)
-  piattaforma: PiattaformaPost;
+  // Retro-compatibilità
+  materiale_id?: string | null;
+  piattaforma?: PiattaformaPost;
+
+  // Nuova struttura multi-asset e multi-piattaforma
+  piattaforme: PiattaformaPost[];
+  materiali_ids?: string[] | null;
+  
   formato: FormatoPost;
   tags?: string[];
   numero_revisioni: number;
@@ -88,7 +93,6 @@ export interface Post {
   versioni: VersionePost[];
   versione_corrente: number;
   
-  // Nuovi Campi Workflow 2.0
   tipo_pianificazione: TipoPianificazione;
-  scadenza_approvazione?: Timestamp | null; // Calcolato come +24h dall'invio
+  scadenza_approvazione?: Timestamp | null;
 }
