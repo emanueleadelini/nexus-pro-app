@@ -12,6 +12,8 @@ import { ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
+const ADMIN_EMAIL = 'emanueleadelini@gmail.com';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,15 +30,9 @@ export default function LoginPage() {
 
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
       
-      if (userDoc.exists()) {
-        const ruolo = userDoc.data().ruolo;
-        if (['super_admin', 'operatore', 'admin'].includes(ruolo)) {
-          router.push('/admin');
-        } else {
-          router.push('/cliente');
-        }
+      if (user.email === ADMIN_EMAIL) {
+        router.push('/admin');
       } else {
         router.push('/cliente');
       }

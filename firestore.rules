@@ -12,30 +12,16 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      let data = getUserData();
-      return isSignedIn() && (data.ruolo == 'super_admin' || data.ruolo == 'admin');
-    }
-
-    function isOperatore() {
-      return isSignedIn() && getUserData().ruolo == 'operatore';
+      return isSignedIn() && request.auth.token.email == 'emanueleadelini@gmail.com';
     }
 
     function isAgency() {
-      return isSuperAdmin() || isOperatore();
-    }
-
-    function isReferente(clientId) {
-      let data = getUserData();
-      return isSignedIn() && data.ruolo == 'referente' && data.cliente_id == clientId;
-    }
-
-    function isCollaboratore(clientId) {
-      let data = getUserData();
-      return isSignedIn() && data.ruolo == 'collaboratore' && data.cliente_id == clientId;
+      return isSuperAdmin() || (isSignedIn() && getUserData().ruolo == 'operatore');
     }
 
     function isClient(clientId) {
-      return isReferente(clientId) || isCollaboratore(clientId) || (isSignedIn() && getUserData().cliente_id == clientId);
+      let data = getUserData();
+      return isSignedIn() && (data.cliente_id == clientId || isAgency());
     }
 
     // --- COLLECTION GROUP (per Admin) ---
@@ -52,7 +38,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && (request.auth.uid == uid || isAgency());
       allow list: if isAgency();
       allow create: if isSignedIn();
-      allow update: if (request.auth.uid == uid && request.resource.data.ruolo == resource.data.ruolo) || isSuperAdmin();
+      allow update: if (request.auth.uid == uid) || isSuperAdmin();
       allow delete: if isSuperAdmin();
 
       match /notifiche/{notificaId} {
@@ -65,24 +51,24 @@ service cloud.firestore {
 
     // --- CLIENTI ---
     match /clienti/{clienteId} {
-      allow get: if isClient(clienteId) || isAgency();
+      allow get: if isClient(clienteId);
       allow list: if isAgency();
       allow create, update, delete: if isSuperAdmin();
 
       match /post/{postId} {
-        allow get, list: if isClient(clienteId) || isAgency();
+        allow get, list: if isClient(clienteId);
         allow create: if isAgency();
         allow update: if isAgency() || isClient(clienteId);
         allow delete: if isAgency();
         
         match /commenti/{commentoId} {
-          allow read, write: if isClient(clienteId) || isAgency();
+          allow read, write: if isClient(clienteId);
         }
       }
 
       match /materiali/{materialeId} {
-        allow get, list: if isClient(clienteId) || isAgency();
-        allow create: if isClient(clienteId) || isAgency();
+        allow get, list: if isClient(clienteId);
+        allow create: if isClient(clienteId);
         allow update: if isAgency() || isClient(clienteId);
         allow delete: if isAgency();
       }

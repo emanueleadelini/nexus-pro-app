@@ -32,6 +32,8 @@ export interface FirebaseContextState extends UserAuthState {
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+const ADMIN_EMAIL = 'emanueleadelini@gmail.com';
+
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   children,
   firebaseApp,
@@ -91,7 +93,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   }, [authState.user, firestore]);
 
   // QUERY GLOBALI PROTETTE (IDENTITY-AWARE)
-  const isAdmin = ['super_admin', 'admin', 'operatore'].includes(authState.userData?.ruolo || '');
+  const isAdmin = authState.user?.email === ADMIN_EMAIL;
   
   const usersQuery = useMemoFirebase(() => {
     if (!isAdmin || !firestore) return null;
@@ -143,8 +145,8 @@ export const useUser = () => {
     userData, 
     isUserDataLoading,
     role: userData?.ruolo || null,
-    isAdmin: ['super_admin', 'admin', 'operatore'].includes(userData?.ruolo || ''),
-    isCliente: ['referente', 'collaboratore'].includes(userData?.ruolo || '')
+    isAdmin: user?.email === ADMIN_EMAIL,
+    isCliente: user && user.email !== ADMIN_EMAIL
   };
 };
 

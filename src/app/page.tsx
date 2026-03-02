@@ -23,7 +23,7 @@ export default function LandingPage() {
 
   const handleClienteRedirect = () => {
     if (!user) { router.push('/login'); return; }
-    router.push('/cliente');
+    router.push(isAdmin ? '/admin' : '/cliente');
   };
 
   return (
@@ -48,7 +48,7 @@ export default function LandingPage() {
                 <ShieldAlert className="w-4 h-4" /> Admin
               </Button>
               <Button 
-                onClick={handleClienteRedirect} 
+                onClick={() => router.push('/login')} 
                 className="gradient-primary font-bold gap-2 rounded-full px-6 shadow-indigo-500/20"
               >
                 <Users className="w-4 h-4" /> Clienti
@@ -82,7 +82,7 @@ export default function LandingPage() {
               Prenota Consulenza <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button 
-              onClick={handleClienteRedirect} 
+              onClick={() => router.push('/login')} 
               variant="outline" 
               size="lg" 
               className="text-lg font-bold h-16 px-12 rounded-full border-slate-200 hover:bg-white bg-white text-slate-900 shadow-sm"

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { ShieldCheck, Loader2, CheckCircle, AlertCircle, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { PERMESSI_DEFAULT } from '@/types/user';
+
+const ADMIN_EMAIL = 'emanueleadelini@gmail.com';
 
 export default function SetupAdminPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -19,7 +21,6 @@ export default function SetupAdminPage() {
   const db = useFirestore();
 
   const handleSetup = async () => {
-    // NEXUS PRO: Protezione Master Key
     if (setupKey !== 'nexus2024') {
       setStatus('error');
       setMessage('Master Key non valida. Contatta il dev team.');
@@ -27,7 +28,7 @@ export default function SetupAdminPage() {
     }
 
     setStatus('loading');
-    const email = 'emanueleadelini@gmail.com';
+    const email = ADMIN_EMAIL;
     const pass = 'Angela25!';
 
     try {
@@ -47,7 +48,7 @@ export default function SetupAdminPage() {
           creatoIl: serverTimestamp()
         });
         setStatus('success');
-        setMessage('Nexus Pro inizializzato con successo.');
+        setMessage('Nexus Pro inizializzato con successo per emanueleadelini@gmail.com.');
       }
     } catch (error: any) {
       setStatus('error');
@@ -65,7 +66,7 @@ export default function SetupAdminPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-headline font-bold">Inizializzazione SaaS</CardTitle>
-          <CardDescription>Configura il primo account Super Admin.</CardDescription>
+          <CardDescription>Configura l'account Admin per emanueleadelini@gmail.com</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {status === 'idle' && (
