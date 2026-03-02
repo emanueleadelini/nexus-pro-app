@@ -33,26 +33,6 @@
         "aggiornato_il": { "type": "string", "format": "date-time" }
       }
     },
-    "Post": {
-      "title": "Post",
-      "type": "object",
-      "properties": {
-        "titolo": { "type": "string" },
-        "testo": { "type": "string" },
-        "stato": { "type": "string", "enum": ["bozza", "revisione_interna", "da_approvare", "revisione", "approvato", "programmato", "pubblicato"] },
-        "piattaforme": { "type": "array", "items": { "type": "string" } },
-        "formato": { "type": "string" },
-        "materiali_ids": { "type": "array", "items": { "type": "string" } },
-        "tipo_pianificazione": { "type": "string", "enum": ["immediata", "programmata"] },
-        "scadenza_approvazione": { "type": "string", "format": "date-time" },
-        "data_pubblicazione": { "type": "string", "format": "date-time" },
-        "creato_il": { "type": "string", "format": "date-time" },
-        "aggiornato_il": { "type": "string", "format": "date-time" },
-        "versione_corrente": { "type": "number" },
-        "storico_stati": { "type": "array", "items": { "type": "object" } },
-        "versioni": { "type": "array", "items": { "type": "object" } }
-      }
-    },
     "Material": {
       "title": "Material",
       "type": "object",
@@ -63,8 +43,9 @@
         "caricato_da": { "type": "string" },
         "ruolo_caricatore": { "type": "string", "enum": ["admin", "cliente"] },
         "stato_validazione": { "type": "string", "enum": ["in_attesa", "validato", "rifiutato"] },
-        "destinazione": { "type": "string", "enum": ["social", "sito", "offline", "strategico"] },
+        "destinazione": { "type": "string", "enum": ["social", "sito", "offline", "strategico", "visual_identity", "contratto"] },
         "tipo_strategico": { "type": "string", "enum": ["piano_strategico", "piano_comunicazione", "business_plan", "business_model"] },
+        "tipo_offline": { "type": "string", "enum": ["brochure", "volantino", "6x3", "3x6", "altro"] },
         "note_cliente": { "type": "string" },
         "creato_il": { "type": "string", "format": "date-time" }
       }

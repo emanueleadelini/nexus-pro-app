@@ -5,7 +5,7 @@ import { useFirestore, useMemoFirebase, useCollection, useDoc, useUser, useAuth 
 import { collection, doc, query, orderBy, updateDoc, serverTimestamp, deleteDoc, increment, arrayUnion, Timestamp, getDocs, where } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { StatoPost, STATO_POST_LABELS, STATO_POST_COLORS, Post } from '@/types/post';
-import { Material } from '@/types/material';
+import { Material, getFileTypeInfo } from '@/types/material';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,13 +29,18 @@ import {
   KeyRound,
   Download,
   ShieldAlert,
-  Loader2
+  Loader2,
+  Fingerprint,
+  Printer,
+  FileSignature,
+  DownloadCloud
 } from 'lucide-react';
 import { useState } from 'react';
 import { GeneraBozzaModal } from '@/components/admin/genera-bozza-modal';
 import { CreaPostManualeModal } from '@/components/admin/crea-post-manuale-modal';
 import { ModificaPostModal } from '@/components/admin/modifica-post-modal';
 import { ModificaPianoModal } from '@/components/admin/modifica-piano-modal';
+import { CaricaMaterialeModal } from '@/components/admin/carica-materiale-modal';
 import { CommentiSidebar } from '@/components/commenti-sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -81,6 +86,7 @@ export default function ClienteDettaglio() {
 
   const [isGeneraOpen, setIsGeneraOpen] = useState(false);
   const [isCreaManualeOpen, setIsCreaManualeOpen] = useState(false);
+  const [isCaricaMaterialeOpen, setIsCaricaMaterialeOpen] = useState(false);
   const [isPianoOpen, setIsPianoOpen] = useState(false);
   const [postDaModificare, setPostDaModificare] = useState<Post | null>(null);
   const [postPerCommenti, setPostPerCommenti] = useState<string | null>(null);
@@ -97,6 +103,12 @@ export default function ClienteDettaglio() {
     return query(collection(db, 'clienti', clienteId, 'post'), orderBy('creato_il', 'desc'));
   }, [db, clienteId, user]);
   const { data: posts } = useCollection<Post>(postsQuery);
+
+  const materialsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(db, 'clienti', clienteId, 'materiali'), orderBy('creato_il', 'desc'));
+  }, [db, clienteId, user]);
+  const { data: materials } = useCollection<Material>(materialsQuery);
 
   const handleTransizione = (post: Post, nuovoStato: StatoPost) => {
     if (!user) return;
@@ -136,11 +148,7 @@ export default function ClienteDettaglio() {
   const handleDeleteClient = async () => {
     setIsDeleting(true);
     try {
-      // Elimina il cliente
       await deleteDoc(doc(db, 'clienti', clienteId));
-      
-      // Nota: Idealmente dovresti eliminare anche utenti collegati e post via Cloud Function
-      // Qui facciamo una eliminazione semplice del record cliente
       toast({ title: "Cliente eliminato", description: "Il tenant è stato rimosso con successo." });
       router.push('/admin/clienti');
     } catch (e) {
@@ -181,7 +189,7 @@ export default function ClienteDettaglio() {
           </div>
           <div>
             <h1 className="text-4xl font-headline font-bold text-slate-900">{client.nome_azienda}</h1>
-            <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">{client.settore} • Dashboard Operativa</p>
+            <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">{client.settore} • Hub Master</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -209,7 +217,7 @@ export default function ClienteDettaglio() {
                     <span className="text-sm font-bold">Elimina Cliente</span>
                   </button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl bg-white">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl font-headline font-bold text-slate-900">Sei assolutamente sicuro?</AlertDialogTitle>
                     <AlertDialogDescription className="text-slate-500 font-medium">
@@ -230,6 +238,7 @@ export default function ClienteDettaglio() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <Button variant="outline" onClick={() => setIsCaricaMaterialeOpen(true)} className="h-11 border-slate-200 text-slate-700 rounded-xl font-bold px-6 hover:bg-slate-50"><FolderOpen className="w-4 h-4 mr-2"/> Carica Asset</Button>
           <Button variant="outline" onClick={() => setIsCreaManualeOpen(true)} className="h-11 border-indigo-600 text-indigo-700 rounded-xl font-bold px-6 hover:bg-indigo-50"><Plus className="w-4 h-4 mr-2"/> Nuovo Post</Button>
           <Button onClick={() => setIsGeneraOpen(true)} className="h-11 gradient-primary shadow-lg shadow-indigo-500/20 rounded-xl font-bold px-6"><Sparkles className="w-4 h-4 mr-2"/> Genera AI</Button>
         </div>
@@ -240,6 +249,7 @@ export default function ClienteDettaglio() {
           <Tabs defaultValue="list">
             <TabsList className="bg-transparent border-b border-slate-100 rounded-none h-14 w-full justify-start p-0 mb-6 gap-8">
               <TabsTrigger value="list" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Workflow Post</TabsTrigger>
+              <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Brand & Offline Assets</TabsTrigger>
               <TabsTrigger value="visual" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Calendario Visuale</TabsTrigger>
             </TabsList>
 
@@ -288,12 +298,106 @@ export default function ClienteDettaglio() {
                     </CardFooter>
                  </Card>
                ))}
-               {(!posts || posts.length === 0) && (
-                 <div className="py-20 text-center glass-card rounded-[2.5rem] border-dashed border-slate-200">
-                   <Clock className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                   <p className="text-slate-400 font-bold">Nessun post prodotto per questo cliente.</p>
-                 </div>
-               )}
+            </TabsContent>
+
+            <TabsContent value="assets" className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Visual Identity Section */}
+                <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden">
+                  <CardHeader className="bg-indigo-50 border-b border-indigo-100">
+                    <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 flex items-center gap-2">
+                      <Fingerprint className="w-4 h-4" /> Visual Identity (Loghi)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-3">
+                    {materials?.filter(m => m.destinazione === 'visual_identity').map(m => (
+                      <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-white p-2 rounded-lg border border-slate-200"><Fingerprint className="w-4 h-4 text-indigo-600" /></div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">{m.nome_file}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <DownloadCloud className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {materials?.filter(m => m.destinazione === 'visual_identity').length === 0 && (
+                      <p className="text-center py-6 text-xs font-bold text-slate-400 uppercase italic">Nessun logo caricato</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Contratto Section */}
+                <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden">
+                  <CardHeader className="bg-slate-900 border-b border-slate-800">
+                    <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
+                      <FileSignature className="w-4 h-4" /> Contratto & Accordi
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-3">
+                    {materials?.filter(m => m.destinazione === 'contratto').map(m => (
+                      <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-white p-2 rounded-lg border border-slate-200"><FileSignature className="w-4 h-4 text-slate-900" /></div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">{m.nome_file}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-900 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <DownloadCloud className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {materials?.filter(m => m.destinazione === 'contratto').length === 0 && (
+                      <p className="text-center py-6 text-xs font-bold text-slate-400 uppercase italic">Nessun contratto presente</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Offline Graphics Section */}
+              <Card className="glass-card rounded-[2.5rem] border-none shadow-sm overflow-hidden">
+                <CardHeader className="bg-emerald-50 border-b border-emerald-100 p-8">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg font-headline font-bold text-emerald-900 flex items-center gap-3">
+                      <Printer className="w-6 h-6 text-emerald-600" /> Archivio Grafiche Offline
+                    </CardTitle>
+                    <Badge className="bg-emerald-100 text-emerald-700 border-none px-4 py-1 text-[10px] font-black uppercase tracking-widest">Premium Assets</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {['brochure', 'volantino', '6x3', '3x6', 'altro'].map(type => {
+                      const typeMaterials = materials?.filter(m => m.destinazione === 'offline' && m.tipo_offline === type);
+                      return (
+                        <div key={type} className="space-y-3">
+                          <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2">{type}</h5>
+                          <div className="space-y-2">
+                            {typeMaterials?.map(m => (
+                              <div key={m.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 hover:border-emerald-200 transition-all group shadow-sm">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-bold text-slate-900 truncate" title={m.nome_file}>{m.nome_file}</p>
+                                  <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <DownloadCloud className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            {(!typeMaterials || typeMaterials.length === 0) && (
+                              <p className="text-[9px] font-bold text-slate-300 uppercase italic pl-1">Vuoto</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="visual">
@@ -335,6 +439,7 @@ export default function ClienteDettaglio() {
 
       <GeneraBozzaModal isOpen={isGeneraOpen} onClose={() => setIsGeneraOpen(false)} clienteId={clienteId} clienteNome={client.nome_azienda} clienteSettore={client.settore || ''} />
       <CreaPostManualeModal isOpen={isCreaManualeOpen} onClose={() => setIsCreaManualeOpen(false)} clienteId={clienteId} />
+      <CaricaMaterialeModal isOpen={isCaricaMaterialeOpen} onClose={() => setIsCaricaMaterialeOpen(false)} clienteId={clienteId} />
       <ModificaPostModal isOpen={!!postDaModificare} onClose={() => setPostDaModificare(null)} clienteId={clienteId} post={postDaModificare} />
       <ModificaPianoModal isOpen={isPianoOpen} onClose={() => setIsPianoOpen(false)} clienteId={clienteId} postTotaliAttuali={client.post_totali} includeBP={client.include_business_plan} includeBM={client.include_business_model} />
       {postPerCommenti && <CommentiSidebar clienteId={clienteId} postId={postPerCommenti} isOpen={!!postPerCommenti} onClose={() => setPostPerCommenti(null)} />}

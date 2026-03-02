@@ -1,9 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
-import { FileText, Image as ImageIcon, Video, Camera, Share2, Globe, Printer, Link as LinkIcon, ShieldCheck, PieChart, Briefcase } from 'lucide-react';
+import { FileText, Image as ImageIcon, Video, Camera, Share2, Globe, Printer, Link as LinkIcon, ShieldCheck, PieChart, Briefcase, FileSignature, Fingerprint } from 'lucide-react';
 
 export type StatoValidazione = 'in_attesa' | 'validato' | 'rifiutato';
-export type DestinazioneAsset = 'social' | 'sito' | 'offline' | 'strategico';
-export type TipoAsset = 'grafica' | 'foto' | 'video' | 'documento' | 'link' | 'strategia';
+export type DestinazioneAsset = 'social' | 'sito' | 'offline' | 'strategico' | 'visual_identity' | 'contratto';
+export type TipoAsset = 'grafica' | 'foto' | 'video' | 'documento' | 'link' | 'strategia' | 'legale';
 
 export const STATO_VALIDAZIONE_LABELS: Record<StatoValidazione, string> = {
   in_attesa: 'In attesa',
@@ -22,6 +22,8 @@ export const DESTINAZIONE_LABELS: Record<DestinazioneAsset, string> = {
   sito: 'Sito Web',
   offline: 'Grafica Offline',
   strategico: 'Documento Strategico',
+  visual_identity: 'Visual Identity (Logo)',
+  contratto: 'Contratto & Accordi',
 };
 
 export const DESTINAZIONE_ICONS: Record<DestinazioneAsset, any> = {
@@ -29,6 +31,8 @@ export const DESTINAZIONE_ICONS: Record<DestinazioneAsset, any> = {
   sito: Globe,
   offline: Printer,
   strategico: ShieldCheck,
+  visual_identity: Fingerprint,
+  contratto: FileSignature,
 };
 
 export interface Material {
@@ -41,12 +45,16 @@ export interface Material {
   stato_validazione: StatoValidazione;
   destinazione: DestinazioneAsset; 
   tipo_strategico?: 'piano_strategico' | 'piano_comunicazione' | 'business_plan' | 'business_model';
+  tipo_offline?: 'brochure' | 'volantino' | '6x3' | '3x6' | 'altro';
   note_rifiuto: string | null;
   note_cliente?: string | null;
   creato_il: Timestamp;
 }
 
 export function getFileTypeInfo(fileName: string, isLink?: boolean, destinazione?: DestinazioneAsset) {
+  if (destinazione === 'contratto') {
+    return { type: 'legale' as TipoAsset, label: 'Contratto', icon: FileSignature, color: 'text-slate-900', bg: 'bg-slate-100' };
+  }
   if (destinazione === 'strategico') {
      return { type: 'strategia' as TipoAsset, label: 'Strategia', icon: ShieldCheck, color: 'text-indigo-600', bg: 'bg-indigo-50' };
   }
