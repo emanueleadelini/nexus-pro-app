@@ -4,18 +4,18 @@
 
 @layer base {
   :root {
-    --background: 222 47% 4%; /* Slate 950 */
+    --background: 222 47% 2%; /* Sfondo ultra-deep quasi nero */
     --foreground: 210 40% 98%;
-    --card: 222 47% 7%; /* Slate 900 */
+    --card: 222 47% 5%; /* Card leggermente più chiare dello sfondo per profondità */
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 7%;
+    --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
     --primary: 239 84% 67%; /* Indigo 600 */
     --primary-foreground: 210 40% 98%;
-    --secondary: 222 47% 12%; /* Slate 800 */
+    --secondary: 222 47% 10%;
     --secondary-foreground: 210 40% 98%;
     --muted: 222 47% 12%;
-    --muted-foreground: 215 20% 65%;
+    --muted-foreground: 215 20% 75%; /* Testo muto più chiaro per leggibilità */
     --accent: 262 83% 58%; /* Violet 600 */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
@@ -35,12 +35,12 @@
     @apply bg-background text-foreground font-body antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline font-semibold tracking-tight;
+    @apply font-headline font-bold tracking-tight text-white;
   }
 }
 
 .glass-card {
-  @apply bg-slate-900/50 backdrop-blur-xl border border-white/10 shadow-2xl;
+  @apply bg-slate-900/60 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)];
 }
 
 .gradient-text {
@@ -48,7 +48,7 @@
 }
 
 .gradient-primary {
-  @apply bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all duration-300;
+  @apply bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-indigo-500/20;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
