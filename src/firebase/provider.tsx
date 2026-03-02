@@ -92,22 +92,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     return () => unsubscribeData();
   }, [authState.user, firestore]);
 
-  // QUERY GLOBALI PROTETTE (SOLO PER ADMIN)
   const isAdmin = authState.user?.email === ADMIN_EMAIL;
   
-  const usersQuery = useMemoFirebase(() => {
-    if (!isAdmin || !firestore) return null;
-    return query(collection(firestore, 'users'), limit(100));
-  }, [firestore, isAdmin]);
-
-  const clientsQuery = useMemoFirebase(() => {
-    if (!isAdmin || !firestore) return null;
-    return query(collection(firestore, 'clienti'), limit(100));
-  }, [firestore, isAdmin]);
-
-  const { data: globalUsers } = useCollection(usersQuery, { enabled: isAdmin });
-  const { data: globalClients } = useCollection(clientsQuery, { enabled: isAdmin });
-
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
     return {
@@ -146,7 +132,8 @@ export const useUser = () => {
     isUserDataLoading,
     role: userData?.ruolo || null,
     isAdmin: user?.email === ADMIN_EMAIL,
-    isCliente: user && user.email !== ADMIN_EMAIL
+    isCliente: user && user.email !== ADMIN_EMAIL,
+    clienteId: userData?.cliente_id || null
   };
 };
 
