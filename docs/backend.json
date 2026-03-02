@@ -33,8 +33,32 @@
         "include_offline": { "type": "boolean" },
         "richiesta_upgrade": { "type": "boolean" },
         "richiesta_attenzione": { "type": "boolean" },
+        "ai_training": {
+          "type": "object",
+          "properties": {
+            "brand_voice": { "type": "string", "description": "Personality and tone of the brand" },
+            "target_audience": { "type": "string", "description": "Primary demographics and interests" },
+            "key_values": { "type": "string", "description": "Core business values and mission" },
+            "main_topics": { "type": "string", "description": "Content pillars usually discussed" },
+            "competitors": { "type": "string", "description": "Reference competitors or industry benchmarks" }
+          }
+        },
         "creato_il": { "type": "string", "format": "date-time" },
         "aggiornato_il": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Post": {
+      "title": "Post",
+      "type": "object",
+      "properties": {
+        "titolo": { "type": "string" },
+        "testo": { "type": "string" },
+        "stato": { "type": "string", "enum": ["bozza", "revisione_interna", "da_approvare", "revisione", "approvato", "programmato", "pubblicato"] },
+        "piattaforme": { "type": "array", "items": { "type": "string" } },
+        "formato": { "type": "string" },
+        "data_pubblicazione": { "type": "string", "format": "date-time" },
+        "materiali_ids": { "type": "array", "items": { "type": "string" } },
+        "scadenza_approvazione": { "type": "string", "format": "date-time" }
       }
     },
     "Material": {
