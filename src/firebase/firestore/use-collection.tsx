@@ -35,7 +35,7 @@ export function useCollection<T = any>(
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // GUARDIA 1: Disabilitato o null
+    // GUARDIA 1: Sospensione esplicita o riferimento nullo
     if (!enabled || !memoizedTargetRefOrQuery) {
       setData(null);
       setIsLoading(false);
@@ -43,7 +43,7 @@ export function useCollection<T = any>(
       return;
     }
 
-    // GUARDIA 2: Verifica percorso "unknown" per evitare crash rules
+    // GUARDIA 2: Protezione percorsi "unknown"
     try {
       const path = (memoizedTargetRefOrQuery as any).type === 'collection'
         ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -54,7 +54,9 @@ export function useCollection<T = any>(
         setIsLoading(false);
         return;
       }
-    } catch (e) {}
+    } catch (e) {
+      // Ignora errori di parsing del path
+    }
 
     if (unsubscribeRef.current) unsubscribeRef.current();
 
@@ -73,9 +75,9 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (err: FirestoreError) => {
-        // GUARDIA 3: Silenzia permission-denied durante il caricamento/transizioni
+        // GUARDIA 3: Silenzio assenso durante caricamento o transizioni
         if (err.code === 'permission-denied') {
-          console.warn('useCollection: Permesso negato silenziato.');
+          console.warn('useCollection: Permesso negato silenziato per evitare crash visivi.');
           setData(null);
           setIsLoading(false);
           return;

@@ -45,13 +45,13 @@ export default function ClienteFeedPage() {
   const { data: clientData, isLoading: isClientLoading } = useDoc<any>(clientDocRef);
 
   const postsQuery = useMemoFirebase(() => {
-    if (!clienteId || clienteId === 'unknown' || !isCliente) return null;
+    if (!clienteId || clienteId === 'unknown') return null;
     return query(
       collection(db, 'clienti', clienteId, 'post'),
       where('stato', 'in', ['da_approvare', 'approvato', 'programmato', 'pubblicato']),
       orderBy('creato_il', 'desc')
     );
-  }, [db, clienteId, isCliente]);
+  }, [db, clienteId]);
   const { data: posts, isLoading: isPostsLoading } = useCollection<any>(postsQuery);
 
   const materialsQuery = useMemoFirebase(() => {

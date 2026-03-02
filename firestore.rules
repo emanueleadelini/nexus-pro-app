@@ -6,25 +6,38 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserData() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data : {"ruolo": "nessuno"};
+    function userHasRole(role) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data.ruolo == role;
+    }
+
+    function userHasClienteId(clientId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data.cliente_id == clientId;
     }
 
     function isSuperAdmin() {
+      // Unico admin globale per AD Next Lab
       return isSignedIn() && request.auth.token.email == 'emanueleadelini@gmail.com';
     }
 
     function isAgency() {
-      return isSuperAdmin() || (isSignedIn() && getUserData().ruolo == 'operatore');
+      return isSuperAdmin() || (isSignedIn() && userHasRole('operatore'));
+    }
+
+    function isReferente(clientId) {
+      return isSignedIn() && userHasRole('referente') && userHasClienteId(clientId);
+    }
+
+    function isCollaboratore(clientId) {
+      return isSignedIn() && userHasRole('collaboratore') && userHasClienteId(clientId);
     }
 
     function isClient(clientId) {
-      let data = getUserData();
-      return isSignedIn() && (data.cliente_id == clientId || isAgency());
+      return isReferente(clientId) || isCollaboratore(clientId);
     }
 
-    // --- COLLECTION GROUP (per Admin) ---
+    // --- COLLECTION GROUP (per Admin Dashboard) ---
     match /{path=**}/post/{postId} {
       allow list: if isAgency();
     }
@@ -51,24 +64,26 @@ service cloud.firestore {
 
     // --- CLIENTI ---
     match /clienti/{clienteId} {
-      allow get: if isClient(clienteId);
+      allow get: if isClient(clienteId) || isAgency();
       allow list: if isAgency();
       allow create, update, delete: if isSuperAdmin();
 
+      // POST subcollection
       match /post/{postId} {
-        allow get, list: if isClient(clienteId);
+        allow get, list: if isClient(clienteId) || isAgency();
         allow create: if isAgency();
         allow update: if isAgency() || isClient(clienteId);
         allow delete: if isAgency();
         
         match /commenti/{commentoId} {
-          allow read, write: if isClient(clienteId);
+          allow read, write: if isClient(clienteId) || isAgency();
         }
       }
 
+      // MATERIALI subcollection
       match /materiali/{materialeId} {
-        allow get, list: if isClient(clienteId);
-        allow create: if isClient(clienteId);
+        allow get, list: if isClient(clienteId) || isAgency();
+        allow create: if isClient(clienteId) || isAgency();
         allow update: if isAgency() || isClient(clienteId);
         allow delete: if isAgency();
       }
