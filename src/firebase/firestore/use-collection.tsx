@@ -43,13 +43,13 @@ export function useCollection<T = any>(
       return;
     }
 
-    // GUARDIA 2: Protezione percorsi non validi o "unknown"
+    // GUARDIA 2: Protezione percorsi non validi o "unknown" (BRUTE FORCE FIX)
     try {
       const path = (memoizedTargetRefOrQuery as any).type === 'collection'
         ? (memoizedTargetRefOrQuery as CollectionReference).path
         : (memoizedTargetRefOrQuery as any)._query?.path?.canonicalString?.() || '';
       
-      if (!path || path.includes('unknown') || path === '') {
+      if (!path || path.includes('unknown') || path === '' || path === '/databases/(default)/documents/unknown') {
         setData(null);
         setIsLoading(false);
         return;
@@ -77,7 +77,7 @@ export function useCollection<T = any>(
       (err: FirestoreError) => {
         // GUARDIA 3: Silenzio assenso durante caricamento o transizioni di auth
         if (err.code === 'permission-denied') {
-          console.warn('useCollection: Permesso negato silenziato (fase di caricamento auth).');
+          console.warn('useCollection: Permesso negato silenziato (fase di caricamento auth o debug).');
           setData(null);
           setIsLoading(false);
           return;
