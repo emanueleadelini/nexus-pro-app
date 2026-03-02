@@ -28,7 +28,8 @@ import {
   Clock,
   Timer,
   ArrowUpRight,
-  TrendingUp
+  TrendingUp,
+  Download
 } from 'lucide-react';
 import { FeedInstagramPreview } from '@/components/feed-instagram-preview';
 import { useToast } from '@/hooks/use-toast';
@@ -52,7 +53,7 @@ export default function ClienteFeedPage() {
   const [postPerCommenti, setPostPerCommenti] = useState<string | null>(null);
   const [materialUrlsMap, setMaterialUrlsMap] = useState<Record<string, string[]>>({});
 
-  // FONDAMENTALE: Usa il cliente_id dal profilo
+  // FONDAMENTALE: Usa il cliente_id dal profilo caricato
   const clienteId = userData?.cliente_id;
   const isIdValid = !!clienteId && clienteId !== 'unknown';
 
@@ -145,14 +146,6 @@ export default function ClienteFeedPage() {
     if (!clienteId || !user) return;
     try {
       await updateDoc(doc(db, 'clienti', clienteId), { richiesta_upgrade: true });
-      // Invia notifica all'admin
-      await addDoc(collection(db, 'users', 'admin-placeholder', 'notifiche'), { // In realtà verrebbe gestito lato server o con UID admin fisso
-        tipo: 'upgrade_richiesto',
-        messaggio: `Il cliente ${clientData?.nome_azienda} richiede un upgrade del piano.`,
-        cliente_id: clienteId,
-        letta: false,
-        creato_il: serverTimestamp()
-      });
       toast({ title: "Richiesta Inviata", description: "Il tuo consulente ti contatterà a breve." });
     } catch (e) {
       toast({ variant: 'destructive', title: "Errore", description: "Impossibile inviare la richiesta." });
@@ -161,7 +154,13 @@ export default function ClienteFeedPage() {
 
   if (isUserDataLoading || isClientLoading || isPostsLoading) {
     return (
-      <div className="p-10"><Skeleton className="h-64 w-full rounded-[2rem]"/></div>
+      <div className="p-10 space-y-8">
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3"><Skeleton className="h-[600px] w-full rounded-[2rem]" /></div>
+          <div><Skeleton className="h-[400px] w-full rounded-[2rem]" /></div>
+        </div>
+      </div>
     );
   }
 
@@ -191,12 +190,12 @@ export default function ClienteFeedPage() {
           </div>
           <div>
             <h1 className="text-4xl font-headline font-bold text-slate-900 leading-tight">{clientData?.nome_azienda}</h1>
-            <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px]">Il Tuo Hub Strategico Riservato</p>
+            <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px]">Area Riservata &bull; AD next lab Hub</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="h-12 rounded-xl border-slate-200 text-slate-900 bg-white font-bold px-6 hover:bg-slate-50"><History className="w-4 h-4 mr-2"/> Storico Attività</Button>
-          <Button onClick={handleRequestUpgrade} className="h-12 gradient-primary shadow-lg shadow-indigo-500/20 rounded-xl font-bold px-6">Richiedi Post Extra</Button>
+          <Button variant="outline" className="h-12 rounded-xl border-slate-200 text-slate-900 bg-white font-bold px-6 hover:bg-slate-50"><History className="w-4 h-4 mr-2"/> Storico</Button>
+          <Button onClick={handleRequestUpgrade} className="h-12 gradient-primary shadow-lg shadow-indigo-500/20 rounded-xl font-bold px-6">Post Extra</Button>
         </div>
       </div>
 
@@ -204,7 +203,7 @@ export default function ClienteFeedPage() {
         <div className="lg:col-span-3 space-y-8">
           <Tabs defaultValue="feed">
             <TabsList className="bg-transparent border-b border-slate-100 rounded-none h-14 w-full justify-start p-0 mb-8 gap-8 overflow-x-auto overflow-y-hidden">
-              <TabsTrigger value="feed" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Approvazioni Feed</TabsTrigger>
+              <TabsTrigger value="feed" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Workflow Post</TabsTrigger>
               <TabsTrigger value="calendar" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Calendario Visuale</TabsTrigger>
               <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none rounded-none px-2 h-full font-bold text-slate-400">Brand & Offline Assets</TabsTrigger>
             </TabsList>
@@ -217,7 +216,7 @@ export default function ClienteFeedPage() {
                   </Badge>
                 </div>
 
-                {posts?.filter(p => ['bozza', 'revisione_interna'].indexOf(p.stato) === -1).map((post) => (
+                {posts?.filter(p => !['bozza', 'revisione_interna'].includes(p.stato)).map((post) => (
                   <div key={post.id} id={`post-${post.id}`} className={post.id === highlightPostId ? 'ring-2 ring-indigo-600 rounded-[2rem] p-2 bg-indigo-50' : ''}>
                     <FeedInstagramPreview
                       post={post}
@@ -251,7 +250,7 @@ export default function ClienteFeedPage() {
                 <div className="mb-6 flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-headline font-bold text-slate-900">Programmazione Mensile</h3>
-                    <p className="text-sm text-slate-500 font-medium">Panoramica completa di tutti i post approvati e programmati.</p>
+                    <p className="text-sm text-slate-500 font-medium">Visione d'insieme di tutti i post approvati e programmati.</p>
                   </div>
                   <Badge variant="outline" className="border-indigo-100 text-indigo-600 bg-indigo-50/50 uppercase font-black text-[9px] px-3 py-1">SOLO CONSULTAZIONE</Badge>
                 </div>
@@ -273,18 +272,18 @@ export default function ClienteFeedPage() {
                         <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
                           <div className="flex items-center gap-3">
                             <div className="bg-white p-2 rounded-xl shadow-sm"><FileSignature className="w-5 h-5 text-slate-900" /></div>
-                            <div>
-                              <p className="text-xs font-bold text-slate-900">{m.nome_file}</p>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase">Archiviato il {m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-900 truncate">{m.nome_file}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase">Firmato il {m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
                             </div>
                           </div>
-                          <Button variant="outline" size="icon" className="rounded-xl border-slate-200 text-slate-600 hover:text-slate-900 shadow-sm">
+                          <Button variant="outline" size="icon" className="rounded-xl border-slate-200 text-slate-600 hover:text-slate-900 shadow-sm" onClick={() => m.link_esterno && window.open(m.link_esterno, '_blank')}>
                             <DownloadCloud className="w-4 h-4" />
                           </Button>
                         </div>
                       ))}
                       {materials?.filter(m => m.destinazione === 'contratto').length === 0 && (
-                        <p className="text-center py-8 text-[10px] font-bold text-slate-400 uppercase italic">In fase di caricamento...</p>
+                        <p className="text-center py-8 text-[10px] font-bold text-slate-400 uppercase italic">Nessun contratto archiviato.</p>
                       )}
                     </CardContent>
                   </Card>
@@ -302,8 +301,8 @@ export default function ClienteFeedPage() {
                         <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
                           <div className="flex items-center gap-3">
                             <div className="bg-white p-2 rounded-xl shadow-sm"><Fingerprint className="w-5 h-5 text-indigo-600" /></div>
-                            <div>
-                              <p className="text-xs font-bold text-slate-900">{m.nome_file}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-900 truncate">{m.nome_file}</p>
                               <p className="text-[10px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
                             </div>
                           </div>
@@ -313,7 +312,7 @@ export default function ClienteFeedPage() {
                         </div>
                       ))}
                       {materials?.filter(m => m.destinazione === 'visual_identity').length === 0 && (
-                        <p className="text-center py-8 text-[10px] font-bold text-slate-400 uppercase italic">In attesa di asset...</p>
+                        <p className="text-center py-8 text-[10px] font-bold text-slate-400 uppercase italic">Asset in fase di caricamento.</p>
                       )}
                     </CardContent>
                   </Card>
@@ -370,7 +369,7 @@ export default function ClienteFeedPage() {
                 <div className="text-6xl font-black text-slate-900 mt-2 tracking-tighter">{Math.max(0, (clientData?.post_totali || 0) - (clientData?.post_usati || 0))}</div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-end"><span className="text-[10px] font-black text-slate-400 uppercase">Utilizzo Crediti</span><span className="text-sm font-black text-slate-900">{clientData?.post_usati} / {clientData?.post_totali}</span></div>
+                <div className="flex justify-between items-end"><span className="text-[10px] font-black text-slate-400 uppercase">Utilizzo</span><span className="text-sm font-black text-slate-900">{clientData?.post_usati} / {clientData?.post_totali}</span></div>
                 <Progress value={usagePercent} className="h-2.5 bg-slate-100 rounded-full" />
               </div>
               
@@ -382,7 +381,7 @@ export default function ClienteFeedPage() {
                     <p className="text-[9px] text-slate-400 font-bold uppercase">Servizio attivo al 100%</p>
                   </div>
                 </div>
-                <Button onClick={handleRequestUpgrade} variant="outline" className="w-full h-12 rounded-xl text-indigo-600 border-indigo-100 font-bold hover:bg-indigo-50">Modifica Piano Post</Button>
+                <Button onClick={handleRequestUpgrade} variant="outline" className="w-full h-12 rounded-xl text-indigo-600 border-indigo-100 font-bold hover:bg-indigo-50">Richiedi Post Extra</Button>
               </div>
             </CardContent>
           </Card>
@@ -400,13 +399,13 @@ export default function ClienteFeedPage() {
       <Dialog open={!!selectedPost} onOpenChange={() => setSelectedPost(null)}>
         <DialogContent className="bg-white border-slate-200 text-slate-900 rounded-3xl max-w-sm sm:max-w-md shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-headline font-bold text-slate-900">Feedback Strategico</DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">Indica le modifiche desiderate per questo post.</DialogDescription>
+            <DialogTitle className="text-xl font-headline font-bold text-slate-900">Richiesta Modifiche</DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">Indica le variazioni desiderate per questo contenuto.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Le tue note</label>
-              <Textarea value={noteModifica} onChange={(e) => setNoteModifica(e.target.value)} placeholder="Es: Cambia il tono della call-to-action..." className="bg-slate-50 border-slate-200 min-h-[120px] rounded-2xl resize-none" />
+              <Textarea value={noteModifica} onChange={(e) => setNoteModifica(e.target.value)} placeholder="Es: Vorrei cambiare l'immagine o il tono della caption..." className="bg-slate-50 border-slate-200 min-h-[120px] rounded-2xl resize-none" />
             </div>
           </div>
           <DialogFooter className="gap-3">
