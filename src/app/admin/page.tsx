@@ -44,83 +44,83 @@ export default function AdminDashboard() {
 
   if (isClientsLoading || isPostsLoading) {
     return (
-      <div className="space-y-8 animate-pulse">
+      <div className="space-y-8 p-10 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl bg-white/5" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Skeleton className="h-[400px] rounded-2xl bg-white/5" />
-          <Skeleton className="h-[400px] rounded-2xl bg-white/5" />
+          <Skeleton className="h-[400px] rounded-2xl" />
+          <Skeleton className="h-[400px] rounded-2xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="space-y-10 animate-in fade-in duration-700 p-2 md:p-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h1 className="text-4xl md:text-5xl font-headline font-bold text-white mb-2">Hub Direzionale</h1>
-          <p className="text-slate-400 font-medium">Benvenuto nel cockpit di AD next lab, {userData?.email.split('@')[0]}.</p>
+          <h1 className="text-4xl md:text-5xl font-headline font-bold text-slate-900 mb-2">Hub Direzionale</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Cockpit AD next lab &bull; Benvenuto, {userData?.email.split('@')[0]}</p>
         </div>
         <Link href="/admin/clienti">
-          <Button className="gradient-primary h-14 px-8 rounded-2xl font-bold text-lg gap-3">
-            <Plus className="w-6 h-6" /> Nuovo Cliente
+          <Button className="gradient-primary h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-indigo-500/20">
+            <Plus className="w-5 h-5" /> Nuovo Cliente
           </Button>
         </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: "Clienti Hub", val: clients?.length || 0, icon: Users, color: "text-indigo-400", bg: "bg-indigo-500/10", tag: "ACTIVE" },
-          { label: "In Approvazione", val: pendingPosts?.length || 0, icon: Clock, color: "text-amber-400", bg: "bg-amber-500/10", tag: "PENDING" },
-          { label: "Post Mensili", val: totalUsed, icon: FileText, color: "text-emerald-400", bg: "bg-emerald-500/10", tag: "MONTHLY" },
-          { label: "Efficienza Hub", val: "98.4%", icon: Zap, color: "text-purple-400", bg: "bg-purple-500/10", tag: "REALTIME" }
+          { label: "Clienti Attivi", val: clients?.length || 0, icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", tag: "HUB" },
+          { label: "Task Approvazione", val: pendingPosts?.length || 0, icon: Clock, color: "text-amber-600", bg: "bg-amber-50", tag: "24H" },
+          { label: "Post Mensili", val: totalUsed, icon: FileText, color: "text-emerald-600", bg: "bg-emerald-50", tag: "TOTAL" },
+          { label: "KPI Performance", val: "98.4%", icon: Zap, color: "text-purple-600", bg: "bg-purple-50", tag: "LIVE" }
         ].map((stat, i) => (
-          <Card key={i} className="glass-card border-none overflow-hidden group hover:border-white/20 transition-all">
-            <CardContent className="p-6">
+          <Card key={i} className="bg-white border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all rounded-[2rem]">
+            <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className={`w-14 h-14 ${stat.bg} rounded-2xl flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform`}>
                   <stat.icon className="w-7 h-7" />
                 </div>
-                <Badge variant="outline" className="text-[10px] font-black tracking-widest border-white/10 text-slate-400">{stat.tag}</Badge>
+                <Badge variant="outline" className="text-[9px] font-black tracking-widest border-slate-100 text-slate-400 bg-slate-50 uppercase">{stat.tag}</Badge>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-              <p className="text-4xl font-bold text-white tracking-tighter">{stat.val}</p>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+              <p className="text-4xl font-bold text-slate-900 tracking-tighter">{stat.val}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="glass-card border-none">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-6">
-            <CardTitle className="text-xl font-headline flex items-center gap-3">
-              <Users className="w-6 h-6 text-indigo-400" /> Clienti Recenti
+        <Card className="bg-white border-slate-100 shadow-sm rounded-[2.5rem]">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 p-8">
+            <CardTitle className="text-xl font-headline font-bold flex items-center gap-3 text-slate-900">
+              <Users className="w-6 h-6 text-indigo-600" /> Portfolio Recenti
             </CardTitle>
             <Link href="/admin/clienti">
-              <Button variant="ghost" size="sm" className="text-xs font-bold text-indigo-400 hover:text-white uppercase tracking-wider">
-                Vedi tutti <ArrowRight className="w-4 h-4 ml-2" />
+              <Button variant="ghost" size="sm" className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest hover:bg-indigo-50 rounded-xl">
+                Tutti i Tenant <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent className="pt-6 px-0">
-            <div className="divide-y divide-white/5">
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-50">
               {clients?.map((client: any) => (
                 <Link key={client.id} href={`/admin/clienti/${client.id}`}>
-                  <div className="p-5 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group">
+                  <div className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all cursor-pointer group">
                     <div className="flex items-center gap-5">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center font-black text-xl text-indigo-400 group-hover:border-indigo-500/50">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center font-black text-xl text-indigo-600 group-hover:border-indigo-200">
                         {client.nome_azienda.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">{client.nome_azienda}</p>
-                        <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{client.settore || 'Servizi Professionali'}</p>
+                        <p className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{client.nome_azienda}</p>
+                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{client.settore || 'Servizi Professionali'}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-black text-white">{client.post_usati} / {client.post_totali}</p>
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-tighter">Budget Post</p>
+                      <p className="text-sm font-black text-slate-900">{client.post_usati} / {client.post_totali}</p>
+                      <p className="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Budget Post</p>
                     </div>
                   </div>
                 </Link>
@@ -129,30 +129,34 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-none">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-6">
-            <CardTitle className="text-xl font-headline flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-amber-400" /> Workflow 24h
+        <Card className="bg-white border-slate-100 shadow-sm rounded-[2.5rem]">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 p-8">
+            <CardTitle className="text-xl font-headline font-bold flex items-center gap-3 text-slate-900">
+              <AlertCircle className="w-6 h-6 text-amber-500" /> Workflow 24h
             </CardTitle>
-            <Badge className="bg-amber-500/20 text-amber-400 border-none px-3 py-1 text-[10px] font-black uppercase tracking-widest">
-              {pendingPosts?.length || 0} Task
+            <Badge className="bg-amber-50 text-amber-600 border-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
+              {pendingPosts?.length || 0} Attesa
             </Badge>
           </CardHeader>
-          <CardContent className="pt-6 px-0">
-            <div className="divide-y divide-white/5">
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-50">
               {pendingPosts?.map((post: any) => (
-                <div key={post.id} className="p-5 flex items-center justify-between hover:bg-white/5 transition-all group">
+                <div key={post.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all group">
                   <div className="flex items-center gap-5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)] animate-pulse" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.3)]" />
                     <div className="min-w-0">
-                      <p className="text-base font-bold text-white truncate max-w-[220px]">{post.titolo}</p>
-                      <p className="text-[10px] text-slate-500 uppercase font-black flex items-center gap-2 tracking-widest mt-1">
-                        <Calendar className="w-3.5 h-3.5 text-indigo-400" /> {post.piattaforma}
-                      </p>
+                      <p className="text-base font-bold text-slate-900 truncate max-w-[220px]">{post.titolo}</p>
+                      <div className="flex gap-2 mt-1">
+                        {(post.piattaforme || [post.piattaforma]).map((p: string) => (
+                          <span key={p} className="text-[9px] text-slate-400 uppercase font-black tracking-widest flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-indigo-400" /> {p}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <Link href={`/admin/clienti/${post.cliente_id}?postId=${post.id}`}>
-                    <Button size="sm" variant="ghost" className="h-10 px-4 text-[10px] font-black uppercase tracking-[0.15em] text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-xl transition-all">
+                    <Button size="sm" variant="ghost" className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
                       Apri Task
                     </Button>
                   </Link>
@@ -160,10 +164,10 @@ export default function AdminDashboard() {
               ))}
               {(!pendingPosts || pendingPosts.length === 0) && (
                 <div className="p-20 text-center flex flex-col items-center justify-center space-y-4">
-                  <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500/50" />
                   </div>
-                  <p className="text-slate-400 font-medium italic">Hub in ordine. Tutti i workflow sono completati.</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Tutto approvato &bull; Hub in Ordine</p>
                 </div>
               )}
             </div>

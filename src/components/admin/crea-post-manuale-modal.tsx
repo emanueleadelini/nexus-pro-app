@@ -135,6 +135,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
       const newPostRef = await addDoc(collection(db, 'clienti', clienteId, 'post'), postData);
       await updateDoc(doc(db, 'clienti', clienteId), { post_usati: increment(1) });
 
+      // Notifica al referente
       const usersSnap = await getDocs(query(collection(db, 'users'), where('cliente_id', '==', clienteId), where('ruolo', '==', 'referente')));
       for (const refDoc of usersSnap.docs) {
         await addDoc(collection(db, 'users', refDoc.id, 'notifiche'), {
@@ -166,26 +167,26 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetForm(); onClose(); }}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FilePlus2 className="w-5 h-5 text-indigo-600" /> Nuovo Post Strategico
+          <DialogTitle className="flex items-center gap-2 text-indigo-600">
+            <FilePlus2 className="w-5 h-5" /> Nuovo Post Strategico
           </DialogTitle>
-          <DialogDescription>Configura i canali social e gli asset per questo post.</DialogDescription>
+          <DialogDescription className="text-slate-500 font-medium">Configura i canali social e gli asset per questo post.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSave} className="space-y-6 py-4">
           <div className="space-y-3">
-            <Label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Piattaforme Social</Label>
+            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.15em] ml-1">Piattaforme Social</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {Object.entries(PIATTAFORMA_LABELS).map(([id, label]) => (
-                <div key={id} className="flex items-center space-x-2">
+                <div key={id} className="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
                   <Checkbox 
                     id={`plat-${id}`} 
                     checked={formData.piattaforme.includes(id as PiattaformaPost)}
                     onCheckedChange={() => togglePiattaforma(id as PiattaformaPost)}
                   />
-                  <Label htmlFor={`plat-${id}`} className="text-sm font-medium cursor-pointer">{label}</Label>
+                  <Label htmlFor={`plat-${id}`} className="text-xs font-bold text-slate-700 cursor-pointer leading-none">{label}</Label>
                 </div>
               ))}
             </div>
@@ -193,16 +194,16 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Formato</Label>
+              <Label className="text-xs font-bold text-slate-600">Formato</Label>
               <Select value={formData.formato} onValueChange={(v: any) => { setFormData({...formData, formato: v}); if (v !== 'carosello') setSelectedFiles(prev => prev.slice(0, 1)); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50"><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.entries(FORMATO_LABELS).map(([id, label]) => <SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Pianificazione</Label>
+              <Label className="text-xs font-bold text-slate-600">Pianificazione</Label>
               <Select value={formData.tipo_pianificazione} onValueChange={(v: any) => setFormData({...formData, tipo_pianificazione: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="immediata">Pubblica Subito</SelectItem>
                   <SelectItem value="programmata">Programma Uscita</SelectItem>
@@ -213,27 +214,27 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="titolo">Titolo Interno</Label>
-              <Input id="titolo" value={formData.titolo} onChange={(e) => setFormData({...formData, titolo: e.target.value})} placeholder="es. Lancio Prodotto Primavera" required />
+              <Label htmlFor="titolo" className="text-xs font-bold text-slate-600">Titolo Interno</Label>
+              <Input id="titolo" value={formData.titolo} onChange={(e) => setFormData({...formData, titolo: e.target.value})} placeholder="es. Lancio Prodotto Primavera" required className="rounded-xl border-slate-200" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="testo">Copy del Post</Label>
-              <Textarea id="testo" value={formData.testo} onChange={(e) => setFormData({...formData, testo: e.target.value})} className="min-h-[120px]" placeholder="Scrivi il testo del post..." required />
+              <Label htmlFor="testo" className="text-xs font-bold text-slate-600">Copy del Post</Label>
+              <Textarea id="testo" value={formData.testo} onChange={(e) => setFormData({...formData, testo: e.target.value})} className="min-h-[120px] rounded-xl border-slate-200 resize-none" placeholder="Scrivi il testo del post..." required />
             </div>
           </div>
 
-          <div className="space-y-4 border-t pt-4">
+          <div className="space-y-4 border-t border-slate-100 pt-4">
             <div className="flex justify-between items-center">
-              <Label className="text-indigo-600 font-bold flex items-center gap-2">
+              <Label className="text-indigo-600 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
                 <Images className="w-4 h-4" /> 
-                Asset Media {formData.formato === 'carosello' ? '(Multipli)' : '(Singolo)'}
+                Media Assets {formData.formato === 'carosello' ? '(Multipli)' : '(Singolo)'}
               </Label>
-              {selectedFiles.length > 0 && <span className="text-[10px] font-bold text-gray-400">{selectedFiles.length} file selezionati</span>}
+              {selectedFiles.length > 0 && <span className="text-[10px] font-black text-slate-400 uppercase">{selectedFiles.length} file pronti</span>}
             </div>
             
             <div 
               onClick={() => fileInputRef.current?.click()} 
-              className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${selectedFiles.length > 0 ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}`}
+              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${selectedFiles.length > 0 ? 'border-indigo-400 bg-indigo-50/30' : 'border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-slate-100'}`}
             >
               <input 
                 type="file" 
@@ -242,17 +243,17 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
                 className="hidden" 
                 multiple={formData.formato === 'carosello'} 
               />
-              <UploadCloud className="w-8 h-8 text-gray-300 mb-2" />
-              <p className="text-xs font-medium text-gray-500 text-center">Trascina i file o clicca per caricare</p>
+              <UploadCloud className="w-10 h-10 text-slate-300 mb-3" />
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Trascina o clicca per caricare</p>
             </div>
 
             {selectedFiles.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {selectedFiles.map((file, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded border text-[10px] font-medium">
+                  <div key={i} className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-100 text-[10px] font-bold text-slate-700 shadow-sm">
                     <span className="truncate flex-1 mr-2">{file.name}</span>
-                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 text-red-500" onClick={(e) => { e.stopPropagation(); removeFile(i); }}>
-                      <X className="w-3 h-3" />
+                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); removeFile(i); }}>
+                      <X className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 ))}
@@ -261,16 +262,16 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
           </div>
 
           {formData.tipo_pianificazione === 'programmata' && (
-            <div className="space-y-2">
-              <Label>Data e Ora di Uscita</Label>
-              <Input type="datetime-local" value={formData.data_pubblicazione} onChange={(e) => setFormData({...formData, data_pubblicazione: e.target.value})} />
+            <div className="space-y-2 border-t border-slate-100 pt-4">
+              <Label className="text-xs font-bold text-slate-600">Data e Ora di Uscita</Label>
+              <Input type="datetime-local" value={formData.data_pubblicazione} onChange={(e) => setFormData({...formData, data_pubblicazione: e.target.value})} className="rounded-xl border-slate-200 bg-slate-50" />
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>Annulla</Button>
-            <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 font-bold px-8">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Invia per Approvazione'}
+          <DialogFooter className="pt-4 border-t border-slate-100">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={loading} className="font-bold text-slate-500">Annulla</Button>
+            <Button type="submit" disabled={loading} className="gradient-primary font-bold h-12 rounded-xl px-10">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'Invia al Cliente'}
             </Button>
           </DialogFooter>
         </form>
