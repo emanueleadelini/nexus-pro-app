@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -27,6 +28,9 @@
         "post_usati": { "type": "number" },
         "include_business_plan": { "type": "boolean" },
         "include_business_model": { "type": "boolean" },
+        "include_contratto": { "type": "boolean" },
+        "include_visual_identity": { "type": "boolean" },
+        "include_offline": { "type": "boolean" },
         "richiesta_upgrade": { "type": "boolean" },
         "richiesta_attenzione": { "type": "boolean" },
         "creato_il": { "type": "string", "format": "date-time" },

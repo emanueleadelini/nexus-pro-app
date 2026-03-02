@@ -1,22 +1,21 @@
+
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase, useCollection, useDoc, useUser, useAuth } from '@/firebase';
-import { collection, doc, query, orderBy, updateDoc, serverTimestamp, deleteDoc, increment, arrayUnion, Timestamp, getDocs, where } from 'firebase/firestore';
+import { collection, doc, query, orderBy, updateDoc, serverTimestamp, deleteDoc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { StatoPost, STATO_POST_LABELS, STATO_POST_COLORS, Post } from '@/types/post';
-import { Material, getFileTypeInfo } from '@/types/material';
+import { Material } from '@/types/material';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { 
-  CalendarDays, 
   FolderOpen, 
   Sparkles, 
-  ChevronLeft, 
   Edit3, 
   Trash2, 
   MessageSquare, 
@@ -28,7 +27,6 @@ import {
   Settings,
   KeyRound,
   Download,
-  ShieldAlert,
   Loader2,
   Fingerprint,
   Printer,
@@ -81,7 +79,7 @@ export default function ClienteDettaglio() {
   const db = useFirestore();
   const auth = useAuth();
   const router = useRouter();
-  const { user, userData } = useUser();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const [isGeneraOpen, setIsGeneraOpen] = useState(false);
@@ -441,7 +439,15 @@ export default function ClienteDettaglio() {
       <CreaPostManualeModal isOpen={isCreaManualeOpen} onClose={() => setIsCreaManualeOpen(false)} clienteId={clienteId} />
       <CaricaMaterialeModal isOpen={isCaricaMaterialeOpen} onClose={() => setIsCaricaMaterialeOpen(false)} clienteId={clienteId} />
       <ModificaPostModal isOpen={!!postDaModificare} onClose={() => setPostDaModificare(null)} clienteId={clienteId} post={postDaModificare} />
-      <ModificaPianoModal isOpen={isPianoOpen} onClose={() => setIsPianoOpen(false)} clienteId={clienteId} postTotaliAttuali={client.post_totali} includeBP={client.include_business_plan} includeBM={client.include_business_model} />
+      <ModificaPianoModal 
+        isOpen={isPianoOpen} 
+        onClose={() => setIsPianoOpen(false)} 
+        clienteId={clienteId} 
+        postTotaliAttuali={client.post_totali} 
+        includeContratto={client.include_contratto}
+        includeVisualIdentity={client.include_visual_identity}
+        includeOffline={client.include_offline}
+      />
       {postPerCommenti && <CommentiSidebar clienteId={clienteId} postId={postPerCommenti} isOpen={!!postPerCommenti} onClose={() => setPostPerCommenti(null)} />}
     </div>
   );

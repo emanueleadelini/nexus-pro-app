@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { query, collection, where, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, Timestamp, getDocs } from 'firebase/firestore';
+import { query, collection, where, orderBy, doc, updateDoc, serverTimestamp, arrayUnion, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -12,15 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Check, 
   Zap,
-  Info,
   Loader2,
   Fingerprint,
   Printer,
   FileSignature,
-  DownloadCloud,
-  LayoutGrid,
-  History,
-  ShieldCheck
+  DownloadCloud
 } from 'lucide-react';
 import { FeedInstagramPreview } from '@/components/feed-instagram-preview';
 import { useToast } from '@/hooks/use-toast';
@@ -151,6 +148,9 @@ export default function ClienteFeedPage() {
     );
   }
 
+  // Verifica se almeno una sezione brand è attiva
+  const hasBrandDocSections = clientData?.include_contratto || clientData?.include_visual_identity || clientData?.include_offline;
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 relative pb-24">
       <div className="max-w-4xl mx-auto space-y-10">
@@ -160,9 +160,11 @@ export default function ClienteFeedPage() {
         </div>
 
         <Tabs defaultValue="feed" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto bg-white border border-slate-200 h-12 p-1 rounded-2xl mb-8 shadow-sm">
+          <TabsList className={`grid w-full ${hasBrandDocSections ? 'grid-cols-2' : 'grid-cols-1'} max-w-md mx-auto bg-white border border-slate-200 h-12 p-1 rounded-2xl mb-8 shadow-sm`}>
             <TabsTrigger value="feed" className="rounded-xl font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Feed & Approvazioni</TabsTrigger>
-            <TabsTrigger value="brand" className="rounded-xl font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Brand & Documenti</TabsTrigger>
+            {hasBrandDocSections && (
+              <TabsTrigger value="brand" className="rounded-xl font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Brand & Documenti</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="feed" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -197,99 +199,107 @@ export default function ClienteFeedPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="brand" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Sezione Contratto Cliente */}
-              <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
-                <CardHeader className="bg-slate-900 p-6">
-                  <CardTitle className="text-white text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                    <FileSignature className="w-4 h-4" /> Il Tuo Contratto
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {materials?.filter(m => m.destinazione === 'contratto').map(m => (
-                    <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white p-2 rounded-xl shadow-sm"><FileSignature className="w-5 h-5 text-slate-900" /></div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900">{m.nome_file}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">Caricato il {m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="icon" className="rounded-xl border-slate-200 text-slate-600 hover:text-slate-900">
-                        <DownloadCloud className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {materials?.filter(m => m.destinazione === 'contratto').length === 0 && (
-                    <p className="text-center py-8 text-xs font-bold text-slate-400 uppercase italic">Documento in fase di caricamento...</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Visual Identity / Loghi */}
-              <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
-                <CardHeader className="bg-indigo-50 p-6">
-                  <CardTitle className="text-indigo-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                    <Fingerprint className="w-4 h-4" /> Visual Identity (Loghi)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {materials?.filter(m => m.destinazione === 'visual_identity').map(m => (
-                    <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white p-2 rounded-xl shadow-sm"><Fingerprint className="w-5 h-5 text-indigo-600" /></div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900">{m.nome_file}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="icon" className="rounded-xl border-indigo-100 text-indigo-600 hover:bg-indigo-50">
-                        <DownloadCloud className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sezione Offline Graphics */}
-            <Card className="glass-card rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
-              <CardHeader className="bg-emerald-50 p-8 border-b border-emerald-100">
-                <CardTitle className="text-emerald-900 font-headline font-bold flex items-center gap-3">
-                  <Printer className="w-6 h-6 text-emerald-600" /> Grafiche & Materiali Offline
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {['brochure', 'volantino', '6x3', '3x6', 'altro'].map(type => {
-                    const typeMaterials = materials?.filter(m => m.destinazione === 'offline' && m.tipo_offline === type);
-                    return (
-                      <div key={type} className="space-y-4">
-                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2">{type}</h5>
-                        <div className="space-y-3">
-                          {typeMaterials?.map(m => (
-                            <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold text-slate-900 truncate">{m.nome_file}</p>
-                                <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
-                              </div>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-100 rounded-lg">
-                                <DownloadCloud className="w-4 h-4" />
-                              </Button>
+          {hasBrandDocSections && (
+            <TabsContent value="brand" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sezione Contratto Cliente */}
+                {clientData?.include_contratto && (
+                  <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
+                    <CardHeader className="bg-slate-900 p-6">
+                      <CardTitle className="text-white text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                        <FileSignature className="w-4 h-4" /> Il Tuo Contratto
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      {materials?.filter(m => m.destinazione === 'contratto').map(m => (
+                        <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-white p-2 rounded-xl shadow-sm"><FileSignature className="w-5 h-5 text-slate-900" /></div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">{m.nome_file}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase">Caricato il {m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
                             </div>
-                          ))}
-                          {(!typeMaterials || typeMaterials.length === 0) && (
-                            <p className="text-[9px] font-bold text-slate-300 uppercase italic">Nessun asset {type}</p>
-                          )}
+                          </div>
+                          <Button variant="outline" size="icon" className="rounded-xl border-slate-200 text-slate-600 hover:text-slate-900">
+                            <DownloadCloud className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      ))}
+                      {materials?.filter(m => m.destinazione === 'contratto').length === 0 && (
+                        <p className="text-center py-8 text-xs font-bold text-slate-400 uppercase italic">Documento in fase di caricamento...</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Visual Identity / Loghi */}
+                {clientData?.include_visual_identity && (
+                  <Card className="glass-card rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
+                    <CardHeader className="bg-indigo-50 p-6">
+                      <CardTitle className="text-indigo-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                        <Fingerprint className="w-4 h-4" /> Visual Identity (Loghi)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      {materials?.filter(m => m.destinazione === 'visual_identity').map(m => (
+                        <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-white p-2 rounded-xl shadow-sm"><Fingerprint className="w-5 h-5 text-indigo-600" /></div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">{m.nome_file}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="icon" className="rounded-xl border-indigo-100 text-indigo-600 hover:bg-indigo-50">
+                            <DownloadCloud className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Sezione Offline Graphics */}
+              {clientData?.include_offline && (
+                <Card className="glass-card rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
+                  <CardHeader className="bg-emerald-50 p-8 border-b border-emerald-100">
+                    <CardTitle className="text-emerald-900 font-headline font-bold flex items-center gap-3">
+                      <Printer className="w-6 h-6 text-emerald-600" /> Grafiche & Materiali Offline
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {['brochure', 'volantino', '6x3', '3x6', 'altro'].map(type => {
+                        const typeMaterials = materials?.filter(m => m.destinazione === 'offline' && m.tipo_offline === type);
+                        return (
+                          <div key={type} className="space-y-4">
+                            <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2">{type}</h5>
+                            <div className="space-y-3">
+                              {typeMaterials?.map(m => (
+                                <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-bold text-slate-900 truncate">{m.nome_file}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">{m.creato_il?.toDate().toLocaleDateString('it-IT')}</p>
+                                  </div>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-100 rounded-lg">
+                                    <DownloadCloud className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                              {(!typeMaterials || typeMaterials.length === 0) && (
+                                <p className="text-[9px] font-bold text-slate-300 uppercase italic">Nessun asset {type}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
