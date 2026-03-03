@@ -8,7 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, Eye, EyeOff, Loader2, Lock, UserCircle } from 'lucide-react';
+import { ShieldCheck, Eye, EyeOff, Loader2, Lock, UserCircle, Crown } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -36,14 +36,26 @@ export default function LoginPage() {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
+        
+        // Priorità assoluta alla tua email
+        if (user.email === 'emanueleadelini@gmail.com') {
+          router.push('/admin');
+          return;
+        }
+
         // Reindirizzamento basato sul ruolo reale nel DB
-        if (data.ruolo === 'super_admin' || data.ruolo === 'operatore') {
+        if (data.ruolo === 'super_admin' || data.ruolo === 'operatore' || data.ruolo === 'admin') {
           router.push('/admin');
         } else {
           router.push('/cliente');
         }
       } else {
-        toast({ variant: 'destructive', title: 'Errore Profilo', description: 'Profilo non trovato nel sistema.' });
+        // Se il documento non esiste ma l'email è quella del superadmin, lo mandiamo al setup
+        if (user.email === 'emanueleadelini@gmail.com') {
+          router.push('/setup-admin');
+        } else {
+          toast({ variant: 'destructive', title: 'Errore Profilo', description: 'Profilo non trovato nel sistema.' });
+        }
       }
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Accesso negato', description: 'Credenziali non valide.' });
@@ -124,14 +136,19 @@ export default function LoginPage() {
               disabled={loading}
               className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-indigo-500/20 mt-4 ${entry === 'admin' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
             >
-              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Entra'}
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Entra nell\'Hub'}
             </Button>
           </form>
 
-          <div className="text-center pt-6 border-t border-slate-100">
+          <div className="text-center pt-6 border-t border-slate-100 flex flex-col gap-4">
             <Link href="/" className="text-slate-400 hover:text-indigo-600 text-xs font-black uppercase tracking-widest transition-all">
               ← Torna alla Home
             </Link>
+            {email === 'emanueleadelini@gmail.com' && (
+              <Link href="/setup-admin" className="text-indigo-600 hover:text-indigo-700 text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-1">
+                <Crown className="w-3 h-3" /> Area Ripristino Master
+              </Link>
+            )}
           </div>
         </div>
       </div>
