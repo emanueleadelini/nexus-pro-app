@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-agency",
+      "description": "Professional agency workspace",
+      "imageUrl": "https://picsum.photos/seed/agency1/1200/600",
+      "imageHint": "modern office"
+    },
+    {
+      "id": "client-placeholder",
+      "description": "Default client logo placeholder",
+      "imageUrl": "https://picsum.photos/seed/clientlogo/400/400",
+      "imageHint": "company logo"
+    },
+    {
+      "id": "post-placeholder",
+      "description": "Social post default asset",
+      "imageUrl": "https://picsum.photos/seed/nexuspost/800/800",
+      "imageHint": "social media"
+    },
+    {
+      "id": "offline-asset",
+      "description": "Offline material placeholder",
+      "imageUrl": "https://picsum.photos/seed/offline/600/400",
+      "imageHint": "print design"
+    }
+  ]
+}

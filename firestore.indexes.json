@@ -1,0 +1,43 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "notifiche",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "creato_il",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "post",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "stato",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "creato_il",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "post",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "stato",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scadenza_approvazione",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
