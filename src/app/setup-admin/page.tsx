@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -40,15 +40,27 @@ export default function SetupAdminPage() {
       });
 
       if (res.user) {
-        await setDoc(doc(db, 'users', res.user.uid), {
+        const batch = writeBatch(db);
+        
+        // Documento profilo utente
+        batch.set(doc(db, 'users', res.user.uid), {
           email: res.user.email,
           ruolo: 'super_admin',
           nomeAzienda: 'AD next lab',
           permessi: PERMESSI_DEFAULT['super_admin'],
           creatoIl: serverTimestamp()
         });
+
+        // Marker per le Security Rules
+        batch.set(doc(db, 'admins', res.user.uid), {
+          active: true,
+          updatedAt: serverTimestamp()
+        });
+
+        await batch.commit();
+        
         setStatus('success');
-        setMessage('Nexus Pro inizializzato con successo per emanueleadelini@gmail.com.');
+        setMessage('Nexus Pro inizializzato con successo. Ora sei riconosciuto come Super Admin dal sistema.');
       }
     } catch (error: any) {
       setStatus('error');
@@ -57,7 +69,7 @@ export default function SetupAdminPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 font-body">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <Card className="w-full max-w-md shadow-2xl border-indigo-100">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -66,7 +78,7 @@ export default function SetupAdminPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-headline font-bold">Inizializzazione SaaS</CardTitle>
-          <CardDescription>Configura l'account Admin per emanueleadelini@gmail.com</CardDescription>
+          <CardDescription>Configura l'account Admin Master</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {status === 'idle' && (
@@ -80,11 +92,11 @@ export default function SetupAdminPage() {
                   value={setupKey} 
                   onChange={(e) => setSetupKey(e.target.value)} 
                   placeholder="Inserisci chiave di licenza" 
-                  className="bg-gray-50"
+                  className="bg-gray-50 h-12 rounded-xl"
                 />
               </div>
-              <Button onClick={handleSetup} className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 font-bold shadow-lg">
-                Attiva Nexus Pro
+              <Button onClick={handleSetup} className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 font-bold shadow-lg rounded-xl">
+                Attiva Privilegi Admin
               </Button>
             </div>
           )}
@@ -92,7 +104,7 @@ export default function SetupAdminPage() {
           {status === 'loading' && (
             <div className="flex flex-col items-center py-4">
               <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mb-2" />
-              <p className="text-sm text-gray-500">Configurazione in corso...</p>
+              <p className="text-sm text-gray-500">Sincronizzazione permessi...</p>
             </div>
           )}
 
@@ -100,8 +112,8 @@ export default function SetupAdminPage() {
             <div className="space-y-4 text-center">
               <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
               <p className="text-green-700 font-medium">{message}</p>
-              <Link href="/login" className="block w-full">
-                <Button className="w-full bg-indigo-600">Vai al Login</Button>
+              <Link href="/login?entry=admin" className="block w-full">
+                <Button className="w-full bg-indigo-600 h-12 rounded-xl font-bold">Accedi all'Area Admin</Button>
               </Link>
             </div>
           )}
@@ -110,7 +122,7 @@ export default function SetupAdminPage() {
             <div className="space-y-4 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
               <p className="text-red-700 text-sm">{message}</p>
-              <Button onClick={() => setStatus('idle')} variant="outline" className="w-full">Riprova</Button>
+              <Button onClick={() => setStatus('idle')} variant="outline" className="w-full h-12 rounded-xl">Riprova</Button>
             </div>
           )}
         </CardContent>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,8 +13,6 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
-const ADMIN_EMAIL = 'emanueleadelini@gmail.com';
-
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +24,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const entry = searchParams.get('entry'); // 'admin' o 'client'
+  const entry = searchParams.get('entry');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,29 +33,20 @@ export default function LoginPage() {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       
-      // Controllo ruolo per reindirizzamento corretto
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
-        if (data.ruolo === 'super_admin' || data.ruolo === 'operatore' || user.email === ADMIN_EMAIL) {
+        // Reindirizzamento basato sul ruolo reale nel DB
+        if (data.ruolo === 'super_admin' || data.ruolo === 'operatore') {
           router.push('/admin');
         } else {
           router.push('/cliente');
         }
       } else {
-        // Fallback email
-        if (user.email === ADMIN_EMAIL) {
-          router.push('/admin');
-        } else {
-          router.push('/cliente');
-        }
+        toast({ variant: 'destructive', title: 'Errore Profilo', description: 'Profilo non trovato nel sistema.' });
       }
     } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Accesso negato',
-        description: 'Email o password non validi. Riprova.'
-      });
+      toast({ variant: 'destructive', title: 'Accesso negato', description: 'Credenziali non valide.' });
     } finally {
       setLoading(false);
     }
@@ -84,11 +72,11 @@ export default function LoginPage() {
           <div className="flex justify-center mt-4">
             {entry === 'admin' ? (
               <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 px-4 py-1 font-black uppercase text-[10px] tracking-widest">
-                Porta d'accesso Agenzia
+                Accesso Agenzia
               </Badge>
             ) : (
               <Badge className="bg-slate-100 text-slate-600 border-slate-200 px-4 py-1 font-black uppercase text-[10px] tracking-widest">
-                Hub Riservato Clienti
+                Area Riservata Clienti
               </Badge>
             )}
           </div>
@@ -97,11 +85,11 @@ export default function LoginPage() {
         <div className="bg-white rounded-[2.5rem] p-10 space-y-8 shadow-xl border border-slate-100">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-black uppercase text-[10px] tracking-widest ml-1">Email Aziendale</Label>
+              <Label htmlFor="email" className="text-slate-700 font-black uppercase text-[10px] tracking-widest ml-1">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="nome@azienda.it"
+                placeholder="nome@adnextlab.it"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-slate-50 border-slate-200 text-slate-900 h-14 rounded-2xl focus:ring-indigo-500/20 px-5 font-medium"
@@ -134,13 +122,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-indigo-500/20 mt-4 ${entry === 'admin' ? 'gradient-primary' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
+              className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-indigo-500/20 mt-4 ${entry === 'admin' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
             >
-              {loading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                'Entra nell\'Hub'
-              )}
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Entra'}
             </Button>
           </form>
 
@@ -150,10 +134,6 @@ export default function LoginPage() {
             </Link>
           </div>
         </div>
-
-        <p className="text-center text-slate-400 text-[10px] font-black uppercase tracking-widest mt-10">
-          Supporto Tecnico: nexus@adnextlab.it
-        </p>
       </div>
     </div>
   );
