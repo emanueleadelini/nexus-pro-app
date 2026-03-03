@@ -24,7 +24,7 @@ La piattaforma utilizza un sistema di gating rigoroso:
 ## 4. Moduli Strategici
 - **Workflow Post**: Gestione stati (bozza -> da approvare -> approvato -> programmato -> pubblicato).
 - **Silenzio Assenso**: Logica di approvazione automatica (24h) gestibile via UI.
-- **Hub Assets**: Archivio centralizzato per Contratti, Visual Identity e Materiali Offline.
+- **Hub Assets**: Archivio centralizzato per Contratti, Visual Identity e Materiali Offline (Bigliettini, Gadget, ecc.).
 - **AI Brand Training**: Sistema di "DNA Mapping" per addestrare i modelli LLM sullo stile comunicativo specifico di ogni cliente.
 
 ## 5. Directory Map
