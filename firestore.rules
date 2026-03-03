@@ -3,23 +3,23 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * NEXUS AGENCY SECURITY RULES - v10.8
+     * NEXUS AGENCY SECURITY RULES - v11.0
      * 
-     * CORE PHILOSOPHY:
-     * Protezione multi-tenant con isolamento dei dati per cliente.
-     * Accesso privilegiato per il Super Admin emanueleadelini@gmail.com.
+     * GOD MODE: Accesso totale garantito per il proprietario.
      */
-
-    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Funzione critica per il Super Admin
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email == "emanueleadelini@gmail.com";
+    }
+
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == "emanueleadelini@gmail.com" ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      return isSuperAdmin() || (
+        isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
@@ -32,7 +32,6 @@ service cloud.firestore {
     }
 
     function belongsToClient(clientId) {
-      // Otteniamo il clientId dal profilo utente per validare l'appartenenza al tenant
       let userProfile = getUserData();
       return isSignedIn() && (
         userProfile.cliente_id == clientId || 
@@ -40,9 +39,28 @@ service cloud.firestore {
       );
     }
 
-    // --- Collection Rules ---
+    // --- REGOLE PRIORITARIE ---
 
-    /** Profilo Utente e Notifiche Personali */
+    // 1. GOD MODE per Emanuele
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // 2. Supporto per Collection Group Queries (Post, Materiali, Notifiche)
+    match /{path=**}/post/{postId} {
+      allow read: if isAdmin();
+    }
+    
+    match /{path=**}/materiali/{materialId} {
+      allow read: if isAdmin();
+    }
+
+    match /{path=**}/notifiche/{notificaId} {
+      allow read: if isAdmin();
+    }
+
+    // --- REGOLE SPECIFICHE ---
+
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
@@ -50,29 +68,24 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
 
-      // Regole per le notifiche dell'utente (v10.8)
       match /notifiche/{notificaId} {
         allow read, update: if isOwner(userId) || isAdmin();
         allow create, delete: if isAdmin();
       }
     }
 
-    /** Marker per Amministratori */
     match /admins/{adminId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      // Permette la creazione iniziale per il Super Admin specifico
-      allow create, update: if isOwner(adminId) && (request.auth.token.email == "emanueleadelini@gmail.com" || isAdmin());
+      allow create, update: if isOwner(adminId) || isAdmin();
       allow delete: if isAdmin(); 
     }
 
-    /** Clienti (Tenant) */
     match /clienti/{clientId} {
       allow get: if isAdmin() || belongsToClient(clientId);
       allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
 
-      // Post e relativi Commenti
       match /post/{postId} {
         allow get, list: if isAdmin() || belongsToClient(clientId);
         allow create: if isAdmin();
@@ -87,29 +100,12 @@ service cloud.firestore {
         }
       }
 
-      // Asset e Materiali
       match /materiali/{materialId} {
         allow get, list: if isAdmin() || belongsToClient(clientId);
         allow create: if isAdmin() || belongsToClient(clientId);
         allow update: if isAdmin() || (belongsToClient(clientId) && request.resource.data.clientId == resource.data.clientId);
         allow delete: if isAdmin() || (belongsToClient(clientId) && resource.data.uploadedByUserId == request.auth.uid);
       }
-    }
-
-    /** 
-     * Supporto per Collection Group Queries (CRITICO)
-     * Permette alla Dashboard Admin di interrogare post e materiali globalmente
-     */
-    match /{path=**}/post/{postId} {
-      allow read: if isAdmin();
-    }
-    
-    match /{path=**}/materiali/{materialId} {
-      allow read: if isAdmin();
-    }
-
-    match /{path=**}/notifiche/{notificaId} {
-      allow read: if isAdmin();
     }
   }
 }

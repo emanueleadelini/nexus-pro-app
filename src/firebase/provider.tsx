@@ -72,12 +72,17 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
               isUserDataLoading: false
             }));
           }, (err) => {
-            console.error("Errore recupero profilo:", err);
-            setAuthState(prev => ({ 
-              ...prev, 
-              isUserDataLoading: false,
-              userData: null
-            }));
+            // Se l'errore è di permessi ma l'email è quella del superadmin, ignoriamo l'errore nel caricamento del profilo
+            if (firebaseUser.email === 'emanueleadelini@gmail.com') {
+              setAuthState(prev => ({ ...prev, isUserDataLoading: false }));
+            } else {
+              console.error("Errore recupero profilo:", err);
+              setAuthState(prev => ({ 
+                ...prev, 
+                isUserDataLoading: false,
+                userData: null
+              }));
+            }
           });
 
           return () => unsubscribeDoc();
@@ -106,10 +111,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   }, [auth, firestore]);
 
   const isAdmin = useMemo(() => {
-    // Accesso immediato per l'email del proprietario
-    if (authState.user?.email === 'emanueleadelini@gmail.com') return true;
+    if (!authState.user) return false;
     
-    // Includiamo 'admin' per compatibilità con setup manuali
+    // Accesso immediato e prioritario per l'email del proprietario
+    if (authState.user.email === 'emanueleadelini@gmail.com') return true;
+    
     const role = authState.userData?.ruolo;
     return role === 'super_admin' || role === 'operatore' || role === 'admin';
   }, [authState.userData, authState.user]);
