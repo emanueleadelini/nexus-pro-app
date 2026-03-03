@@ -348,10 +348,10 @@ export default function App() {
               key={i}
               className="absolute w-1 h-1 bg-indigo-500/40 rounded-full animate-pulse"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 3}s`
+                left: `${(i * 17) % 100}%`,
+                top: `${(i * 23) % 100}%`,
+                animationDelay: `${(i * 0.3) % 3}s`,
+                animationDuration: `${2 + ((i * 0.5) % 3)}s`
               }}
             />
           ))}
