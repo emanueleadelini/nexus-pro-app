@@ -15,14 +15,14 @@ Per una comprensione profonda dell'architettura e per il passaggio alla fase di 
 5. [Ingegneria AI](./docs/AI-ENGINEERING.md) - Prompt Strategy e Brand DNA Mapping.
 
 ## Setup Rapido Git (Per Admin)
-Esegui questi comandi nel terminale di Firebase Studio per collegare il repository:
+Esegui questi comandi nel terminale di Firebase Studio per collegare il repository e pushare il codice:
 ```bash
 git init
 git remote add origin https://github.com/emanueleadelini/Nexuspro.git
 git add .
-git commit -m "primo push del progetto"
+git commit -m "primo push completo"
 git branch -M main
-git push -u origin main
+git push -u origin main --force
 ```
 
 ## Configurazione Iniziale App
