@@ -22,6 +22,7 @@ Per una comprensione profonda dell'architettura, consultare la cartella `/docs`:
    git remote add origin https://github.com/emanueleadelini/Nexuspro.git
    git add .
    git commit -m "Initial commit: Nexus Pro v10.1"
+   git branch -M main
    git push -u origin main
    ```
 3. Creare i tenant dall'area Admin.

@@ -15,6 +15,7 @@ Nexus Pro è un'applicazione SaaS Multi-tenant progettata per AD Next Lab. Gesti
 ## 3. Source Control
 - **Repository Ufficiale**: `https://github.com/emanueleadelini/Nexuspro.git`
 - **Guida Setup**: Vedere [GITHUB-SETUP.md](./GITHUB-SETUP.md)
+- **Branch Principale**: `main`
 
 ## 4. Architettura Identity-Aware v10.1
 La piattaforma utilizza un sistema di gating rigoroso per garantire la sicurezza multi-tenant:
