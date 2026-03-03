@@ -1,4 +1,4 @@
-export type UserRole = 'super_admin' | 'operatore' | 'referente' | 'collaboratore';
+export type UserRole = 'super_admin' | 'operatore' | 'referente' | 'collaboratore' | 'admin';
 
 export interface UserProfile {
   uid: string;
@@ -17,6 +17,12 @@ export const PERMESSI_DEFAULT: Record<UserRole, string[]> = {
     "creazione_post", "modifica_post", "approvazione_materiali",
     "visualizzazione_analytics", "configurazione_sistema",
     "gestione_campagne", "uso_ai"
+  ],
+  admin: [
+    "gestione_clienti", "gestione_piani", "gestione_utenti",
+    "creazione_post", "modifica_post", "approvazione_materiali",
+    "visualizzazione_analytics", "configurazione_sistema",
+    "uso_ai"
   ],
   operatore: [
     "creazione_post", "modifica_post", "approvazione_materiali",

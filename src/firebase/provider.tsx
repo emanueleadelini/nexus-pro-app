@@ -64,7 +64,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
             isUserDataLoading: true 
           }));
           
-          // Ascolta il profilo utente in tempo reale con gestione robusta del caricamento
           const userDocRef = doc(firestore, 'users', firebaseUser.uid);
           const unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
             setAuthState(prev => ({
@@ -73,12 +72,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
               isUserDataLoading: false
             }));
           }, (err) => {
-            // Gestione errore (es. permessi mancanti se il documento non esiste ancora)
             console.error("Errore recupero profilo:", err);
             setAuthState(prev => ({ 
               ...prev, 
               isUserDataLoading: false,
-              userData: null // Assicuriamoci che non rimanga in caricamento infinito
+              userData: null
             }));
           });
 
@@ -108,7 +106,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   }, [auth, firestore]);
 
   const isAdmin = useMemo(() => {
-    return authState.userData?.ruolo === 'super_admin' || authState.userData?.ruolo === 'operatore';
+    // Includiamo 'admin' per compatibilità con setup manuali
+    const role = authState.userData?.ruolo;
+    return role === 'super_admin' || role === 'operatore' || role === 'admin';
   }, [authState.userData]);
 
   const contextValue = useMemo((): FirebaseContextState => {
