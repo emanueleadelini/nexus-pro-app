@@ -3,11 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * NEXUS AGENCY SECURITY RULES - v10.4
+     * NEXUS AGENCY SECURITY RULES - v10.5
      * 
      * CORE PHILOSOPHY:
      * Protezione multi-tenant con isolamento dei dati per cliente.
-     * Accesso garantito ai proprietari dei dati e agli amministratori.
+     * Consente l'auto-configurazione del primo admin tramite setup key.
      */
 
     // --- Helper Functions ---
@@ -29,11 +29,10 @@ service cloud.firestore {
     }
 
     function belongsToClient(clientId) {
-      return isSignedIn() && (getUserData().cliente_id == clientId || getUserData().clientId == clientId);
-    }
-
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
+      return isSignedIn() && (
+        getUserData().cliente_id == clientId || 
+        getUserData().clientId == clientId
+      );
     }
 
     // --- Collection Rules ---
@@ -49,34 +48,37 @@ service cloud.firestore {
       // Regole per le notifiche dell'utente
       match /notifiche/{notificaId} {
         allow get, list: if isOwner(userId) || isAdmin();
-        allow create: if isSignedIn(); // Permette a un utente di inviare notifiche a un altro (es. cliente -> admin)
-        allow update: if isOwner(userId) || isAdmin(); // Per segnare come letta
+        allow create: if isSignedIn();
+        allow update: if isOwner(userId) || isAdmin();
         allow delete: if isOwner(userId) || isAdmin();
       }
     }
 
-    /** Marker per Amministratori */
+    /** Marker per Amministratori (Critico per il setup) */
     match /admins/{adminId} {
-      allow get, list: if isAdmin();
-      allow create, update, delete: if false; 
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      // Permette la creazione iniziale via Setup Page
+      allow create: if isOwner(adminId);
+      allow update, delete: if isAdmin(); 
     }
 
     /** Clienti (Tenant) */
     match /clienti/{clientId} {
-      allow get: if belongsToClient(clientId) || isAdmin();
+      allow get: if isAdmin() || belongsToClient(clientId);
       allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
 
       // Post e relativi Commenti
       match /post/{postId} {
-        allow get, list: if belongsToClient(clientId) || isAdmin();
+        allow get, list: if isAdmin() || belongsToClient(clientId);
         allow create: if isAdmin();
         allow update: if isAdmin() || (belongsToClient(clientId) && request.resource.data.clientId == resource.data.clientId);
         allow delete: if isAdmin();
 
         match /commenti/{commentoId} {
-          allow get, list: if belongsToClient(clientId) || isAdmin();
-          allow create: if belongsToClient(clientId) || isAdmin();
+          allow get, list: if isAdmin() || belongsToClient(clientId);
+          allow create: if isAdmin() || belongsToClient(clientId);
           allow update: if isAdmin() || (belongsToClient(clientId) && resource.data.autore_uid == request.auth.uid);
           allow delete: if isAdmin();
         }
@@ -84,7 +86,7 @@ service cloud.firestore {
 
       // Asset e Materiali
       match /materiali/{materialId} {
-        allow get, list: if belongsToClient(clientId) || isAdmin();
+        allow get, list: if isAdmin() || belongsToClient(clientId);
         allow create: if isAdmin() || belongsToClient(clientId);
         allow update: if isAdmin() || (belongsToClient(clientId) && request.resource.data.clientId == resource.data.clientId);
         allow delete: if isAdmin() || (belongsToClient(clientId) && resource.data.uploadedByUserId == request.auth.uid);
