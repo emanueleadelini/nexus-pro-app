@@ -2,6 +2,9 @@
 
 Hub Digitale SaaS per la gestione strategica della comunicazione.
 
+## Repository
+**URL**: `https://github.com/emanueleadelini/Nexuspro.git`
+
 ## Documentazione per Ingegneri
 Per una comprensione profonda dell'architettura, consultare la cartella `/docs`:
 
@@ -12,8 +15,12 @@ Per una comprensione profonda dell'architettura, consultare la cartella `/docs`:
 
 ## Setup Rapido
 1. Inizializzare l'admin principale tramite la pagina `/setup-admin` (Key: `nexus2024`).
-2. Creare i tenant dall'area Admin.
-3. Configurare il Brand DNA per ogni cliente per abilitare la generazione AI strategica.
+2. Collegare il repository locale:
+   ```bash
+   git remote add origin https://github.com/emanueleadelini/Nexuspro.git
+   ```
+3. Creare i tenant dall'area Admin.
+4. Configurare il Brand DNA per ogni cliente per abilitare la generazione AI strategica.
 
 ---
 *Proprietà Intellettuale - AD Next Lab*

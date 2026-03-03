@@ -1,4 +1,4 @@
-# Nexus Pro - Data Model Specification
+# Nexus Pro - Data Model Specification v10.1
 
 ## 1. Users Collection (`/users/{uid}`)
 Rappresenta i profili utente e i permessi.
