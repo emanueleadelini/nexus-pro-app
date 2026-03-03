@@ -1,15 +1,15 @@
-# Guida al Collegamento GitHub (v10.2)
+# Guida al Collegamento GitHub (v10.3)
 
 Questa guida spiega come sincronizzare il codice di Nexus Pro con il repository ufficiale utilizzando il terminale.
 
-## 1. Localizzare il Terminale
-Il terminale è lo strumento necessario per inviare il codice. 
-**In Firebase Studio:**
+## 1. Localizzare il Terminale Corretto
+Per garantire che i comandi funzionino, usa il terminale integrato in **Firebase Studio**:
 - Cerca la linguetta **"Terminal"** nella parte inferiore dello schermo.
-- Se non la vedi, clicca sull'icona `>_` o seleziona dal menu in alto `View > Terminal`.
+- Se non la vedi, clicca su **`View > Terminal`** nel menu in alto.
+- *Nota: Se usi il terminale di Windows (CMD), devi prima entrare nella cartella del progetto con `cd`.*
 
 ## 2. Comandi di Inizializzazione e Push
-Copia e incolla questi comandi nel terminale premendo INVIO dopo ognuno. Questi comandi configureranno il repository e invieranno tutto il codice al server di GitHub.
+Copia e incolla questi comandi nel terminale premendo INVIO dopo ognuno:
 
 ```bash
 # Inizializza il repository locale
@@ -32,7 +32,7 @@ git push -u origin main --force
 ```
 
 ## 3. Manutenzione
-Ogni volta che vengono apportate modifiche significative, ricorda di ripetere l'operazione di `add`, `commit` e `push` per mantenere il backup su GitHub aggiornato:
+Ogni volta che vengono apportate modifiche significative, ricorda di ripetere l'operazione per mantenere il backup aggiornato:
 ```bash
 git add .
 git commit -m "descrizione della modifica"
