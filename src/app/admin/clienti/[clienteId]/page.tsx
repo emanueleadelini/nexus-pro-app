@@ -382,7 +382,7 @@ export default function ClienteDettaglio() {
 
         <div className="space-y-6">
           <Card className="glass-card border-none rounded-[2.5rem] overflow-hidden shadow-sm bg-white">
-            <CardHeader className="bg-indigo-600 p-8"><CardTitle className="text-white text-lg font-headline flex items-center gap-2"><Zap className="w-5 h-5 fill-white" /> Crediti Piano</CardTitle></CardHeader>
+            <CardHeader className="bg-indigo-600 p-8"><CardTitle className="text-white text-lg font-headline flex items-center gap-2"><Zap className="w-5 h-5 fill-white" /> Crediti Mensili</CardTitle></CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="text-center p-6 bg-slate-50 rounded-3xl border border-slate-100">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Post Residui</span>
