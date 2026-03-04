@@ -154,7 +154,8 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
       resetForm();
       onClose();
     } catch (e: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `clienti/${clienteId}/post`, operation: 'create' }));
+      console.error("ERRORE REALE SALVATAGGIO:", e);
+      toast({ variant: 'destructive', title: 'Errore', description: e.message || 'Errore sconosciuto' });
     } finally {
       setLoading(false);
     }
