@@ -41,6 +41,7 @@ export default function SetupAdminPage() {
 
       if (res.user) {
         await setDoc(doc(db, 'users', res.user.uid), {
+          id: res.user.uid,
           email: res.user.email,
           ruolo: 'super_admin',
           nomeAzienda: 'AD next lab',
