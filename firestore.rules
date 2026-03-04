@@ -93,8 +93,8 @@ service cloud.firestore {
      * @principle Implements DBAC (Database-Based Access Control) for high-privilege roles.
      */
     match /admins/{adminId} {
-      allow get, list: if isAdmin();
-      allow create, update, delete: if false; // Managed via Firebase Console or Admin SDK only for safety.
+      allow get, list: if isAdmin() || request.auth.uid == adminId;
+      allow create, update, delete: if request.auth.token.email == 'emanueleadelini@gmail.com'; // Temporaneo bypass per il fondatore
     }
 
     /**

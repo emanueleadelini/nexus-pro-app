@@ -47,6 +47,13 @@ export default function SetupAdminPage() {
           permessi: PERMESSI_DEFAULT['super_admin'],
           creatoIl: serverTimestamp()
         });
+
+        // Il passaggio magico Supremo in locale
+        await setDoc(doc(db, 'admins', res.user.uid), {
+          email: res.user.email,
+          role: 'super_admin',
+          creatoIl: serverTimestamp()
+        });
         setStatus('success');
         setMessage('Nexus Pro inizializzato con successo per emanueleadelini@gmail.com.');
       }
@@ -75,11 +82,11 @@ export default function SetupAdminPage() {
                 <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
                   <Lock className="w-3 h-3" /> Master Activation Key
                 </div>
-                <Input 
-                  type="password" 
-                  value={setupKey} 
-                  onChange={(e) => setSetupKey(e.target.value)} 
-                  placeholder="Inserisci chiave di licenza" 
+                <Input
+                  type="password"
+                  value={setupKey}
+                  onChange={(e) => setSetupKey(e.target.value)}
+                  placeholder="Inserisci chiave di licenza"
                   className="bg-gray-50"
                 />
               </div>
