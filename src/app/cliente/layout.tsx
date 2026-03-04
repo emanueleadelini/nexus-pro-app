@@ -31,7 +31,7 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
         if (userDoc.exists()) {
           const data = userDoc.data();
           const ruolo = data.ruolo;
-          if (ruolo === 'referente' || ruolo === 'collaboratore' || ruolo === 'cliente') {
+          if (ruolo === 'cliente_finale') {
             setIsAuthorized(true);
             setClienteId(data.cliente_id);
           } else {
@@ -80,21 +80,21 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
             </div>
           </Link>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <NotificheBell />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-slate-500 font-bold gap-2 hover:bg-red-50 hover:text-red-600 transition-all rounded-lg h-10" 
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-slate-500 font-bold gap-2 hover:bg-red-50 hover:text-red-600 transition-all rounded-lg h-10"
             onClick={() => auth.signOut()}
           >
-            <LogOut className="w-4 h-4" /> 
+            <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline text-xs">Esci</span>
           </Button>
         </div>
       </header>
-      
+
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6">
         {children}
       </main>

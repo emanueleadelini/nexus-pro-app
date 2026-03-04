@@ -2,18 +2,19 @@
 
 import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
+import { usePermessi } from '@/hooks/use-permessi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Building2, 
-  ArrowRight, 
+import {
+  Users,
+  Plus,
+  Search,
+  Building2,
+  ArrowRight,
   Briefcase,
   Calendar,
   Filter
@@ -23,19 +24,24 @@ import { AggiungiClienteModal } from '@/components/admin/aggiungi-cliente-modal'
 import { Progress } from '@/components/ui/progress';
 
 export default function ClientiListPage() {
-  const { user, isAdmin } = useUser();
+  const { user } = useUser();
+  const { isAdmin, ruolo } = usePermessi();
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const clientsQuery = useMemoFirebase(() => {
-    if (!user || !isAdmin) return null;
-    return query(collection(db, 'clienti'), orderBy('nome_azienda', 'asc'));
-  }, [db, user, isAdmin]);
+    if (!user || !isAdmin || !ruolo) return null;
+    if (ruolo === 'super_admin') {
+      return query(collection(db, 'clienti'), orderBy('nome_azienda', 'asc'));
+    } else {
+      return query(collection(db, 'clienti'), where('agenzia_id', '==', user.uid), orderBy('nome_azienda', 'asc'));
+    }
+  }, [db, user, isAdmin, ruolo]);
 
   const { data: clients, isLoading } = useCollection<any>(clientsQuery);
 
-  const filteredClients = clients?.filter(c => 
+  const filteredClients = clients?.filter(c =>
     c.nome_azienda?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.settore?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -69,8 +75,8 @@ export default function ClientiListPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <Input 
-            placeholder="Cerca azienda o settore..." 
+          <Input
+            placeholder="Cerca azienda o settore..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-slate-900/50 border-white/10 text-white rounded-xl h-11 focus:ring-indigo-500/20"

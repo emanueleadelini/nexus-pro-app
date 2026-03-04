@@ -50,6 +50,8 @@ export function AggiungiClienteModal({ isOpen, onClose }: Props) {
 
     try {
       // Creazione Tenant con moduli attivi di default
+      // Attacchiamo il tenant all'agenzia (L'admin loggato)
+      const currentUserUid = getAuth().currentUser?.uid || 'super_admin';
       const clientRef = await addDoc(collection(db, 'clienti'), {
         nome_azienda: formData.nome_azienda,
         settore: formData.settore,
@@ -59,6 +61,7 @@ export function AggiungiClienteModal({ isOpen, onClose }: Props) {
         include_contratto: true,
         include_visual_identity: true,
         include_offline: true,
+        agenzia_id: currentUserUid,
         creato_il: serverTimestamp(),
         aggiornato_il: serverTimestamp()
       });
@@ -71,10 +74,11 @@ export function AggiungiClienteModal({ isOpen, onClose }: Props) {
       await setDoc(doc(db, 'users', newUid), {
         id: newUid,
         email: formData.user_email,
-        ruolo: 'referente',
+        ruolo: 'cliente_finale',
         cliente_id: clienteId,
+        agenzia_id: currentUserUid,
         nomeAzienda: formData.nome_azienda,
-        permessi: PERMESSI_DEFAULT['referente'],
+        permessi: PERMESSI_DEFAULT['cliente_finale'],
         creatoIl: serverTimestamp()
       });
 

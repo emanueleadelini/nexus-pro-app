@@ -31,7 +31,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [formData, setFormData] = useState({
     titolo: '',
     testo: '',
@@ -41,7 +41,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
     tags: '',
     tipo_pianificazione: 'programmata' as TipoPianificazione
   });
-  
+
   const db = useFirestore();
   const { toast } = useToast();
 
@@ -49,7 +49,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const isCarousel = formData.formato === 'carosello';
-      
+
       if (!isCarousel && files.length > 1) {
         toast({ variant: 'destructive', title: 'Formato singolo', description: 'Puoi caricare un solo file per questo formato.' });
         return;
@@ -75,8 +75,8 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
   const togglePiattaforma = (id: PiattaformaPost) => {
     setFormData(prev => ({
       ...prev,
-      piattaforme: prev.piattaforme.includes(id) 
-        ? prev.piattaforme.filter(p => p !== id) 
+      piattaforme: prev.piattaforme.includes(id)
+        ? prev.piattaforme.filter(p => p !== id)
         : [...prev.piattaforme, id]
     }));
   };
@@ -91,7 +91,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
     setLoading(true);
     try {
       const materialiIds: string[] = [];
-      
+
       if (selectedFiles.length > 0) {
         for (const file of selectedFiles) {
           const matRef = await addDoc(collection(db, 'clienti', clienteId, 'materiali'), {
@@ -136,7 +136,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
       await updateDoc(doc(db, 'clienti', clienteId), { post_usati: increment(1) });
 
       // Notifica al referente
-      const usersSnap = await getDocs(query(collection(db, 'users'), where('cliente_id', '==', clienteId), where('ruolo', '==', 'referente')));
+      const usersSnap = await getDocs(query(collection(db, 'users'), where('cliente_id', '==', clienteId), where('ruolo', '==', 'cliente_finale')));
       for (const refDoc of usersSnap.docs) {
         await addDoc(collection(db, 'users', refDoc.id, 'notifiche'), {
           tipo: 'post_da_approvare',
@@ -181,8 +181,8 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {Object.entries(PIATTAFORMA_LABELS).map(([id, label]) => (
                 <div key={id} className="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
-                  <Checkbox 
-                    id={`plat-${id}`} 
+                  <Checkbox
+                    id={`plat-${id}`}
                     checked={formData.piattaforme.includes(id as PiattaformaPost)}
                     onCheckedChange={() => togglePiattaforma(id as PiattaformaPost)}
                   />
@@ -195,14 +195,14 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-xs font-bold text-slate-600">Formato</Label>
-              <Select value={formData.formato} onValueChange={(v: any) => { setFormData({...formData, formato: v}); if (v !== 'carosello') setSelectedFiles(prev => prev.slice(0, 1)); }}>
+              <Select value={formData.formato} onValueChange={(v: any) => { setFormData({ ...formData, formato: v }); if (v !== 'carosello') setSelectedFiles(prev => prev.slice(0, 1)); }}>
                 <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50"><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.entries(FORMATO_LABELS).map(([id, label]) => <SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-bold text-slate-600">Pianificazione</Label>
-              <Select value={formData.tipo_pianificazione} onValueChange={(v: any) => setFormData({...formData, tipo_pianificazione: v})}>
+              <Select value={formData.tipo_pianificazione} onValueChange={(v: any) => setFormData({ ...formData, tipo_pianificazione: v })}>
                 <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="immediata">Pubblica Subito</SelectItem>
@@ -215,33 +215,33 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="titolo" className="text-xs font-bold text-slate-600">Titolo Interno</Label>
-              <Input id="titolo" value={formData.titolo} onChange={(e) => setFormData({...formData, titolo: e.target.value})} placeholder="es. Lancio Prodotto Primavera" required className="rounded-xl border-slate-200" />
+              <Input id="titolo" value={formData.titolo} onChange={(e) => setFormData({ ...formData, titolo: e.target.value })} placeholder="es. Lancio Prodotto Primavera" required className="rounded-xl border-slate-200" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="testo" className="text-xs font-bold text-slate-600">Copy del Post</Label>
-              <Textarea id="testo" value={formData.testo} onChange={(e) => setFormData({...formData, testo: e.target.value})} className="min-h-[120px] rounded-xl border-slate-200 resize-none" placeholder="Scrivi il testo del post..." required />
+              <Textarea id="testo" value={formData.testo} onChange={(e) => setFormData({ ...formData, testo: e.target.value })} className="min-h-[120px] rounded-xl border-slate-200 resize-none" placeholder="Scrivi il testo del post..." required />
             </div>
           </div>
 
           <div className="space-y-4 border-t border-slate-100 pt-4">
             <div className="flex justify-between items-center">
               <Label className="text-indigo-600 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-                <Images className="w-4 h-4" /> 
+                <Images className="w-4 h-4" />
                 Media Assets {formData.formato === 'carosello' ? '(Multipli)' : '(Singolo)'}
               </Label>
               {selectedFiles.length > 0 && <span className="text-[10px] font-black text-slate-400 uppercase">{selectedFiles.length} file pronti</span>}
             </div>
-            
-            <div 
-              onClick={() => fileInputRef.current?.click()} 
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${selectedFiles.length > 0 ? 'border-indigo-400 bg-indigo-50/30' : 'border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-slate-100'}`}
             >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                className="hidden" 
-                multiple={formData.formato === 'carosello'} 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                multiple={formData.formato === 'carosello'}
               />
               <UploadCloud className="w-10 h-10 text-slate-300 mb-3" />
               <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Trascina o clicca per caricare</p>
@@ -264,7 +264,7 @@ export function CreaPostManualeModal({ isOpen, onClose, clienteId }: Props) {
           {formData.tipo_pianificazione === 'programmata' && (
             <div className="space-y-2 border-t border-slate-100 pt-4">
               <Label className="text-xs font-bold text-slate-600">Data e Ora di Uscita</Label>
-              <Input type="datetime-local" value={formData.data_pubblicazione} onChange={(e) => setFormData({...formData, data_pubblicazione: e.target.value})} className="rounded-xl border-slate-200 bg-slate-50" />
+              <Input type="datetime-local" value={formData.data_pubblicazione} onChange={(e) => setFormData({ ...formData, data_pubblicazione: e.target.value })} className="rounded-xl border-slate-200 bg-slate-50" />
             </div>
           )}
 

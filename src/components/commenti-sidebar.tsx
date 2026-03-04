@@ -57,9 +57,9 @@ export function CommentiSidebar({ clienteId, postId, isOpen, onClose }: Props) {
       };
 
       await addDoc(collection(db, 'clienti', clienteId, 'post', postId, 'commenti'), commentoData);
-      
+
       // LOGICA NOTIFICHE V5.3: Determina destinatari
-      if (ruolo === 'referente' || ruolo === 'collaboratore') {
+      if (ruolo === 'cliente_finale') {
         const adminsSnap = await getDocs(query(collection(db, 'users'), where('ruolo', '==', 'super_admin')));
         for (const adminDoc of adminsSnap.docs) {
           await addDoc(collection(db, 'users', adminDoc.id, 'notifiche'), {
@@ -74,7 +74,7 @@ export function CommentiSidebar({ clienteId, postId, isOpen, onClose }: Props) {
           });
         }
       } else {
-        const clientUsersSnap = await getDocs(query(collection(db, 'users'), where('cliente_id', '==', clienteId), where('ruolo', '==', 'referente')));
+        const clientUsersSnap = await getDocs(query(collection(db, 'users'), where('cliente_id', '==', clienteId), where('ruolo', '==', 'cliente_finale')));
         for (const clientUserDoc of clientUsersSnap.docs) {
           await addDoc(collection(db, 'users', clientUserDoc.id, 'notifiche'), {
             tipo: 'commento_nuovo',
@@ -178,21 +178,21 @@ export function CommentiSidebar({ clienteId, postId, isOpen, onClose }: Props) {
               <SelectContent>
                 <SelectItem value="commento">Commento</SelectItem>
                 <SelectItem value="suggerimento">Suggerimento</SelectItem>
-                {ruolo === 'referente' && <SelectItem value="revisione">Richiesta Revisione</SelectItem>}
+                {ruolo === 'cliente_finale' && <SelectItem value="revisione">Richiesta Revisione</SelectItem>}
               </SelectContent>
             </Select>
           </div>
           <div className="relative">
-            <Textarea 
-              value={testo} 
-              onChange={(e) => setTesto(e.target.value)} 
-              placeholder="Scrivi una nota..." 
+            <Textarea
+              value={testo}
+              onChange={(e) => setTesto(e.target.value)}
+              placeholder="Scrivi una nota..."
               className="min-h-[80px] text-sm bg-white resize-none"
             />
-            <Button 
-              type="submit" 
-              size="icon" 
-              disabled={loading || !testo.trim()} 
+            <Button
+              type="submit"
+              size="icon"
+              disabled={loading || !testo.trim()}
               className="absolute bottom-2 right-2 h-8 w-8 bg-indigo-600 hover:bg-indigo-700"
             >
               {loading ? <Clock className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

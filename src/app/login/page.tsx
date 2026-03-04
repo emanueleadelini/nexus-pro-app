@@ -39,7 +39,7 @@ export default function LoginPage() {
         const ruolo = userDoc.data().ruolo;
 
         // Porta 1 & 2: Super Admin / Agenzie terze (Operatori) -> vanno entrambi nella Dashboard Admin
-        if (ruolo === 'super_admin' || ruolo === 'operatore') {
+        if (ruolo === 'super_admin' || ruolo === 'admin_agenzia') {
           router.push('/admin');
         }
         // Porta 3: Clienti finali (Referenti Aziendali, ecc.) -> vanno nel Client Hub

@@ -47,8 +47,8 @@ export function usePermessi() {
   return {
     haPermesso,
     ruolo,
-    isAdmin: ruolo === 'super_admin' || ruolo === 'operatore',
-    isCliente: ruolo === 'referente' || ruolo === 'collaboratore',
+    isAdmin: ruolo === 'super_admin' || ruolo === 'admin_agenzia',
+    isCliente: ruolo === 'cliente_finale',
     loading: loading || isUserLoading
   };
 }
