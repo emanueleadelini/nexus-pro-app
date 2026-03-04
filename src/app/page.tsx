@@ -364,14 +364,14 @@ export default function App() {
               </div>
 
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-                <span className="block text-white">Software che</span>
+                <span className="block text-white">I nostri software ti aiuteranno</span>
                 <span className="block bg-gradient-to-r from-indigo-400 via-violet-400 to-emerald-400 bg-clip-text text-transparent">
-                  Funziona dal Giorno 1
+                  ad ottimizzare i tuoi processi aziendali.
                 </span>
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed">
-                Costruiamo <strong>tool intelligenti</strong> per agenzie, ristoranti e studi professionali.
+                Costruiamo <strong>tool intelligenti</strong> per aziende, ristoranti e studi professionali.
                 Testati, pronti, con <span className="text-emerald-400">risultati garantiti</span>.
               </p>
 
